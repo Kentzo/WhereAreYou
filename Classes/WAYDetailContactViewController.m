@@ -3,21 +3,6 @@
 
 
 @interface WAYDetailContactViewController ()
-@property (nonatomic, retain) NSMutableArray *_twitterUrls;
-@property (nonatomic, retain) NSMutableArray *_mobilePhones;
-
-// Make properties observable
-- (NSUInteger)countOf_twitterUrls;
-- (void)get_twitterUrls:(id *)aBuffer range:(NSRange)aRange;
-- (void)insertObject:(NSMutableDictionary *)object in_twitterUrlsAtIndex:(NSUInteger)index;
-- (void)removeObjectFrom_twitterUrlsAtIndex:(NSUInteger)index;
-- (void)replaceObjectIn_twitterUrlsAtIndex:(NSUInteger)index withObject:(NSMutableDictionary *)object;
-
-- (NSUInteger)countOf_mobilePhones;
-- (void)get_mobilePhones:(id *)aBuffer range:(NSRange)aRange;
-- (void)insertObject:(NSMutableDictionary *)object in_mobilePhonesAtIndex:(NSUInteger)index;
-- (void)removeObjectFrom_mobilePhonesAtIndex:(NSUInteger)index;
-- (void)replaceObjectIn_mobilePhonesAtIndex:(NSUInteger)index withObject:(NSMutableDictionary *)object;
 
 // Reloads data from address book
 - (void)reloadData;
@@ -28,38 +13,7 @@
 // Layouts cell with text field on label place
 - (void)layoutCellWithTextField:(UITableViewCell *)cell;
 
-// Inserts empty dictionary to a data array at index path indexPath
-//- (void)insertNewObjectAtIndexPath:(NSIndexPath *)indexPath;
-//
-// Removes dictionary from a data array at index path indexPath
-//- (void)removeObjectAtIndexPath:(NSIndexPath *)indexPath;
-//
-// Sets text of dictionary in a data array at index path indexPath
-//- (void)setText:(NSString *)text ofObjectAtIndexPath:(NSIndexPath *)indexPath;
-//
-// Sets selection of dictionary in a data array at index path indexPath
-//- (void)setIsSelected:(BOOL)selected ofObjectAtIndexPath:(NSIndexPath *)indexPath;
-//
-// Returns isSelected value of object in a data array at index path indexPath
-//- (BOOL)objectAtIndexPathIsSelected:(NSIndexPath *)indexPath;
-//
-// Returns text of object in a data array at index path indexPath
-//- (NSString *)textOfObjectAtIndexPath:(NSIndexPath *)indexPath;
-//
-//- (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender;
-//
-// Returns text field on cell at index path
-//- (UITextField *)textFieldForRowAtIndexPath:(NSIndexPath *)indexPath;
-//
-// Starts editing text field on cell at index path indexPath
-//- (void)startEditingTextFieldAtIndexPath:(NSIndexPath *)indexPath;
-//
-// Stops editing text field on cell at current _editingRowIndexPath index path and saves entered data
-// Nullifes _editingRowIndexPath
-// Returns YES, if text is saved. Otherwise returns NO
-//- (BOOL)stopEditingTextField;
-//
-//- (void)keyboardDidShow:(NSNotification *)notification;
+- (void)keyboardDidShow:(NSNotification *)notification;
    
 @end
 
@@ -74,6 +28,7 @@ enum {
 
 static NSString * const kTextKey = @"text";
 static NSString * const kIsSelectedKey = @"isSelected";
+static NSString * const kIsEditingKey = @"isEditing";
 
 static const NSUInteger kTextFieldTag = 100;
 
@@ -81,17 +36,15 @@ static const NSUInteger kTextFieldTag = 100;
 @implementation WAYDetailContactViewController
 @synthesize personID;
 @synthesize delegate;
-@synthesize _mobilePhones;
-@synthesize _twitterUrls;
-@synthesize _editingRowIndexPath;
+@synthesize twitterUrls;
+@synthesize mobilePhones;
 
 #pragma mark -
 #pragma mark Initialization
 
 - (void)dealloc {
-    [_twitterUrls release];
-    [_mobilePhones release];
-    [_editingRowIndexPath release];
+    [twitterUrls release];
+    [mobilePhones release];
     [super dealloc];
 }
 
@@ -121,7 +74,9 @@ static const NSUInteger kTextFieldTag = 100;
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [self reloadData];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidShow:) name:UIKeyboardDidShowNotification object:nil];
+    //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidShow:) name:UIKeyboardDidShowNotification object:nil];
+    [self addObserver:self forKeyPath:@"twitterUrls" options:NSKeyValueObservingOptionNew context:NULL];
+    [self addObserver:self forKeyPath:@"mobilePhones" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:NULL];
 }
 
 
@@ -130,6 +85,8 @@ static const NSUInteger kTextFieldTag = 100;
     // Clean up undo manager
     [self resignFirstResponder];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [self removeObserver:self forKeyPath:@"twitterUrls"];
+    [self removeObserver:self forKeyPath:@"mobilePhones"];
 }
 
 
@@ -196,8 +153,19 @@ static const NSUInteger kTextFieldTag = 100;
         }
         
         // Set up text field data
-        textField.text = [self textOfObjectAtIndexPath:indexPath];
-        cell.editingAccessoryType = [self objectAtIndexPathIsSelected:indexPath] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+        NSDictionary *dataItem = [_data[section] objectAtIndex:row];
+        textField.text = [dataItem objectForKey:kTextKey];
+        cell.editingAccessoryType = [[dataItem objectForKey:kIsEditingKey] boolValue] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+        if ([[dataItem objectForKey:kIsEditingKey] boolValue]) {
+            textField.userInteractionEnabled = YES;
+            cell.userInteractionEnabled = NO;
+            [textField becomeFirstResponder];
+        }
+        else {
+            [textField resignFirstResponder];
+            cell.userInteractionEnabled = YES;
+            textField.userInteractionEnabled = NO;
+        }
     }
     else {
         cell = [tableView dequeueReusableCellWithIdentifier:AddCellIdentifier];
@@ -223,10 +191,23 @@ static const NSUInteger kTextFieldTag = 100;
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        [self removeObjectAtIndexPath:indexPath];
+        if ([indexPath section] == kTwitterSectionIndex) {
+            [self removeObjectFromTwitterUrlsAtIndex:[indexPath row]];
+        }
+        else {
+            [self removeObjectFromMobilePhonesAtIndex:[indexPath row]];
+        }
     }   
     else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        [self insertNewObjectAtIndexPath:indexPath];
+        NSMutableDictionary *newObject = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"", kTextKey, 
+                                          [NSNumber numberWithBool:YES], kIsSelectedKey,
+                                          [NSNumber numberWithBool:YES], kIsEditingKey, nil];
+        if ([indexPath section] == kTwitterSectionIndex) {
+            [self insertObject:newObject inTwitterUrlsAtIndex:[indexPath row]];
+        }
+        else {
+            [self insertObject:newObject inMobilePhonesAtIndex:[indexPath row]];
+        }
     }   
 }
 
@@ -237,23 +218,6 @@ static const NSUInteger kTextFieldTag = 100;
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
-    if ([indexPath row] < [_data[[indexPath section]] count]) {
-        if ([self objectAtIndexPathIsSelected:indexPath]) {
-            [self setIsSelected:NO ofObjectAtIndexPath:indexPath];
-        }
-        else {
-            [self setIsSelected:YES ofObjectAtIndexPath:indexPath];
-        }
-        if (_editingRowIndexPath != nil) {
-            // Stop editing row
-            [self stopEditingTextField];
-        }
-    }
-    else {
-        // Click was made on add button. Insert new object.
-        [self insertNewObjectAtIndexPath:indexPath];
-    }
 }
 
 
@@ -272,7 +236,7 @@ static const NSUInteger kTextFieldTag = 100;
 #pragma mark UITextFieldDelegate
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    [self stopEditingTextField];
+    //[self stopEditingTextField];
     return NO;
 }
 
@@ -280,53 +244,87 @@ static const NSUInteger kTextFieldTag = 100;
 #pragma mark -
 #pragma mark Private
 
-- (NSUInteger)countOf_twitterUrls {
-    return [_twitterUrls count];
+- (NSUInteger)countOfTwitterUrls {
+    return [twitterUrls count];
 }
 
 
-- (void)get_twitterUrls:(id *)aBuffer range:(NSRange)aRange {
-    [_twitterUrls getObjects:aBuffer range:aRange];
+- (id)objectInTwitterUrlsAtIndex:(NSUInteger)index {
+    return [twitterUrls objectAtIndex:index];
 }
 
 
-- (void)insertObject:(NSMutableDictionary *)object in_twitterUrlsAtIndex:(NSUInteger)index {
-    [_twitterUrls insertObject:object atIndex:index];
+- (void)insertObject:(NSMutableDictionary *)object inTwitterUrlsAtIndex:(NSUInteger)index {
+    [twitterUrls insertObject:object atIndex:index];
 }
 
 
-- (void)removeObjectFrom_twitterUrlsAtIndex:(NSUInteger)index {
-    [_twitterUrls removeObjectAtIndex:index];
+- (void)removeObjectFromTwitterUrlsAtIndex:(NSUInteger)index {
+    [twitterUrls removeObjectAtIndex:index];
 }
 
 
-- (void)replaceObjectIn_twitterUrlsAtIndex:(NSUInteger)index withObject:(NSMutableDictionary *)object {
-    [_twitterUrls replaceObjectAtIndex:index withObject:object];
+- (void)replaceObjectInTwitterUrlsAtIndex:(NSUInteger)index withObject:(NSMutableDictionary *)object {
+    [twitterUrls replaceObjectAtIndex:index withObject:object];
 }
 
 
-- (NSUInteger)countOf_mobilePhones {
-    return [_mobilePhones count];
+- (NSUInteger)countOfMobilePhones {
+    return [mobilePhones count];
 }
 
 
-- (void)get_mobilePhones:(id *)aBuffer range:(NSRange)aRange {
-    [_mobilePhones getObjects:aBuffer range:aRange];
+- (id)objectInMobilePhonesAtIndex:(NSUInteger)index {
+    return [mobilePhones objectAtIndex:index];
 }
 
 
-- (void)insertObject:(NSMutableDictionary *)object in_mobilePhonesAtIndex:(NSUInteger)index {
-    [_mobilePhones insertObject:object atIndex:index];
+- (void)insertObject:(NSMutableDictionary *)object inMobilePhonesAtIndex:(NSUInteger)index {
+    [mobilePhones insertObject:object atIndex:index];
 }
 
 
-- (void)removeObjectFrom_mobilePhonesAtIndex:(NSUInteger)index {
-    [_mobilePhones removeObjectAtIndex:index];
+- (void)removeObjectFromMobilePhonesAtIndex:(NSUInteger)index {
+    [mobilePhones removeObjectAtIndex:index];
 }
 
 
-- (void)replaceObjectIn_mobilePhonesAtIndex:(NSUInteger)index withObject:(NSMutableDictionary *)object {
-    [_mobilePhones replaceObjectAtIndex:index withObject:object];
+- (void)replaceObjectInMobilePhonesAtIndex:(NSUInteger)index withObject:(NSMutableDictionary *)object {
+    [mobilePhones replaceObjectAtIndex:index withObject:object];
+}
+
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    
+    NSKeyValueChange type = [[change objectForKey:NSKeyValueChangeKindKey] integerValue];
+    [self.tableView beginUpdates];
+    if (type == NSKeyValueChangeInsertion) {
+        NSIndexSet *indexesToRemove = [change objectForKey:NSKeyValueChangeIndexesKey];
+        NSUInteger indexesCount = [indexesToRemove count];
+        NSUInteger *buffer = calloc(indexesCount, sizeof(NSUInteger));
+        [indexesToRemove getIndexes:buffer maxCount:indexesCount inIndexRange:nil];
+        NSUInteger section = [keyPath isEqualToString:@"twitterUrls"] ? kTwitterSectionIndex : kPhonesSectionIndex;
+        NSUInteger i;
+        for (i=0; i<indexesCount; ++i) {
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:buffer[i] inSection:section];
+            [self.tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationMiddle];
+        }
+        free(buffer);
+    }
+    else if (type = NSKeyValueChangeRemoval) {
+        NSIndexSet *indexesToRemove = [change objectForKey:NSKeyValueChangeIndexesKey];
+        NSUInteger indexesCount = [indexesToRemove count];
+        NSUInteger *buffer = calloc(indexesCount, sizeof(NSUInteger));
+        [indexesToRemove getIndexes:buffer maxCount:indexesCount inIndexRange:nil];
+        NSUInteger section = [keyPath isEqualToString:@"twitterUrls"] ? kTwitterSectionIndex : kPhonesSectionIndex;
+        NSUInteger i;
+        for (i=0; i<indexesCount; ++i) {
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:buffer[i] inSection:section];
+            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationMiddle];
+        }
+        free(buffer);
+    }
+    [self.tableView reloadData];
 }
 
 
@@ -343,9 +341,8 @@ static const NSUInteger kTextFieldTag = 100;
             NSMutableDictionary *selectableUrl = [NSMutableDictionary dictionaryWithObjectsAndKeys:url, kTextKey, [NSNumber numberWithBool:NO], kIsSelectedKey, nil];
             [newUrls addObject:selectableUrl];
         }
-        self._twitterUrls = newUrls;
-        _data[kTwitterSectionIndex] = _twitterUrls;
-        _selectedTwitterUrl = [_twitterUrls count] + 1;
+        self.twitterUrls = newUrls;
+        _data[kTwitterSectionIndex] = twitterUrls;
         
         // Collect all mobile phones
         NSArray *phones = CollectMobilePhones(person);
@@ -355,8 +352,8 @@ static const NSUInteger kTextFieldTag = 100;
             NSMutableDictionary *selectablePhone = [NSMutableDictionary dictionaryWithObjectsAndKeys:phone, kTextKey, [NSNumber numberWithBool:YES], kIsSelectedKey, nil];
             [newPhones addObject:selectablePhone];
         }
-        self._mobilePhones = newPhones;
-        _data[kPhonesSectionIndex] = _mobilePhones;
+        self.mobilePhones = newPhones;
+        _data[kPhonesSectionIndex] = mobilePhones;
         
         self.title = (NSString *)ABRecordCopyCompositeName(person);
     }
@@ -367,8 +364,8 @@ static const NSUInteger kTextFieldTag = 100;
 - (void)done:(id)sender {
     
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSelected = YES"];
-    NSArray *selectedUrls = [[_twitterUrls filteredArrayUsingPredicate:predicate] valueForKey:kTextKey];
-    NSArray *selectedPhones = [[_mobilePhones filteredArrayUsingPredicate:predicate] valueForKey:kTextKey];
+    NSArray *selectedUrls = [[twitterUrls filteredArrayUsingPredicate:predicate] valueForKey:kTextKey];
+    NSArray *selectedPhones = [[mobilePhones filteredArrayUsingPredicate:predicate] valueForKey:kTextKey];
     [delegate detailContactViewController:self didDoneWithTwitterURLs:selectedUrls phoneNumbers:selectedPhones];
 }
 
@@ -399,142 +396,6 @@ static const NSUInteger kTextFieldTag = 100;
     [cell addGestureRecognizer:longPress];
     [longPress release];
 }
-
-//
-//- (void)insertNewObjectAtIndexPath:(NSIndexPath *)indexPath {
-//    
-//    NSUInteger section = [indexPath section];
-//    NSUInteger row = [indexPath row];
-//    if (section == kTwitterSectionIndex) {
-//        NSMutableDictionary *newItem = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"", kTextKey, [NSNumber numberWithBool:NO], kIsSelectedKey, nil];
-//        [_twitterUrls insertObject:newItem atIndex:row];
-//    }
-//    else {
-//        NSMutableDictionary *newItem = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"", kTextKey, [NSNumber numberWithBool:YES], kIsSelectedKey, nil];
-//        [_mobilePhones insertObject:newItem atIndex:row];
-//    }
-//    [self.tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationNone];
-//    [self startEditingTextFieldAtIndexPath:indexPath];
-//}
-//
-//
-//- (void)removeObjectAtIndexPath:(NSIndexPath *)indexPath {
-//    NSMutableArray *dataArray = _data[[indexPath section]];
-//    [dataArray removeObjectAtIndex:[indexPath row]];
-//    if ([_editingRowIndexPath section] == [indexPath section] && [_editingRowIndexPath row] > [indexPath row]) {
-//        NSIndexPath *newEditingIndexPath = [NSIndexPath indexPathForRow:([_editingRowIndexPath row] - 1) inSection:[_editingRowIndexPath section]];
-//        self._editingRowIndexPath = newEditingIndexPath;
-//    }
-//    [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationNone];
-//}
-//
-//
-//- (void)setText:(NSString *)text ofObjectAtIndexPath:(NSIndexPath *)indexPath {
-//    NSMutableDictionary *dataItem = [_data[[indexPath section]] objectAtIndex:[indexPath row]];
-//    [dataItem setObject:text forKey:kTextKey];
-//    [self.tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationNone];
-//}
-//
-//
-//- (void)setIsSelected:(BOOL)selected ofObjectAtIndexPath:(NSIndexPath *)indexPath {
-//    if ([indexPath section] == kTwitterSectionIndex) {
-//        // Only one twitter url can be selected in the same time
-//        NSUInteger index = 0;
-//        for (NSMutableDictionary *url in _twitterUrls) {
-//            if ([[url objectForKey:kIsSelectedKey] boolValue]) {
-//                [url setObject:[NSNumber numberWithBool:NO] forKey:kIsSelectedKey];
-//                NSIndexPath *urlIndexPath = [NSIndexPath indexPathForRow:index inSection:kTwitterSectionIndex];
-//                [self.tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:urlIndexPath] withRowAnimation:UITableViewRowAnimationNone];
-//                break;
-//            }
-//            ++index;
-//        }
-//    }
-//
-//    NSMutableDictionary *dataItem = [_data[[indexPath section]] objectAtIndex:[indexPath row]];
-//    [dataItem setObject:[NSNumber numberWithBool:selected] forKey:kIsSelectedKey];
-//    [self.tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationNone];
-//}
-//
-//
-//- (BOOL)objectAtIndexPathIsSelected:(NSIndexPath *)indexPath {
-//    return [[[_data[[indexPath section]] objectAtIndex:[indexPath row]] objectForKey:kIsSelectedKey] boolValue];
-//}
-//
-//
-//- (NSString *)textOfObjectAtIndexPath:(NSIndexPath *)indexPath {
-//    return [[_data[[indexPath section]] objectAtIndex:[indexPath row]] objectForKey:kTextKey];
-//}
-//
-//
-//- (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender {
-//    
-//    if ([sender state] == UIGestureRecognizerStateBegan) {
-//        CGPoint point = [sender locationInView:self.tableView];
-//        NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
-//        if (_editingRowIndexPath != nil) {
-//            [self stopEditingTextField];
-//        }
-//        [self startEditingTextFieldAtIndexPath:indexPath];
-//    }
-//}
-//
-//
-//- (UITextField *)textFieldForRowAtIndexPath:(NSIndexPath *)indexPath {
-//    UITextField *textField = (UITextField *)[[self.tableView cellForRowAtIndexPath:indexPath] viewWithTag:kTextFieldTag];
-//    return textField;
-//}
-//
-//
-//- (void)startEditingTextFieldAtIndexPath:(NSIndexPath *)indexPath {
-//
-//    UITextField *textField = [self textFieldForRowAtIndexPath:indexPath];
-//    textField.userInteractionEnabled = YES;
-//    [textField becomeFirstResponder];
-//    if (_editingRowIndexPath != nil) {
-//        NSIndexPath *editingIndexPath = [_editingRowIndexPath retain];
-//        if (![self stopEditingTextField]) {
-//            if ([editingIndexPath section] == [indexPath section] && [editingIndexPath row] < [indexPath row]) {
-//                indexPath = [NSIndexPath indexPathForRow:([indexPath row] - 1) inSection:[indexPath section]];
-//            }
-//        }
-//        [editingIndexPath release];
-//    }
-//    self._editingRowIndexPath = indexPath;
-//}
-//
-//
-//- (BOOL)stopEditingTextField {
-//    
-//    NSAssert(_editingRowIndexPath != nil, @"_editingRowIndexPath must not be nil");
-//    
-//    BOOL result = YES;
-//    UITextField *textField = [self textFieldForRowAtIndexPath:_editingRowIndexPath];
-//    
-//    // Save entered text
-//    if ([textField.text length]) {
-//        [self setText:textField.text ofObjectAtIndexPath:_editingRowIndexPath];
-//    }
-//    else {
-//        [self removeObjectAtIndexPath:_editingRowIndexPath];
-//        result = NO;
-//    }
-//    
-//    // End editing
-//    [textField resignFirstResponder];
-//    textField.userInteractionEnabled = NO;
-//    self._editingRowIndexPath = nil;
-//    
-//    return result;
-//}
-//
-//
-//- (void)keyboardDidShow:(NSNotification *)notification {
-//    // Scroll table to row at index path _editingRowIndexPath when keyboard shows
-//    if (_editingRowIndexPath) {
-//        [self.tableView scrollToRowAtIndexPath:_editingRowIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
-//    }
-//}
 
 
 @end
