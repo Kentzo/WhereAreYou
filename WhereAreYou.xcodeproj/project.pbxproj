@@ -20,6 +20,7 @@
 		28AD73600D9D9599002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD735F0D9D9599002E5188 /* MainWindow.xib */; };
 		E250D85E11CF94CE0005FC2E /* AddressBookAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = E250D85D11CF94CE0005FC2E /* AddressBookAdditions.m */; };
 		E280C5D811D0A884000BFCC6 /* WAYDetailContactViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E280C5D711D0A884000BFCC6 /* WAYDetailContactViewController.m */; };
+		E28336B511D4B1BC0047E6B0 /* WAYEditableTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = E28336B411D4B1BC0047E6B0 /* WAYEditableTableViewCell.m */; };
 		E2FA402411CD0570002606AC /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2FA402311CD0570002606AC /* AddressBook.framework */; };
 		E2FA402611CD0570002606AC /* AddressBookUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2FA402511CD0570002606AC /* AddressBookUI.framework */; };
 		E2FA402F11CD065F002606AC /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2FA402E11CD065F002606AC /* MapKit.framework */; };
@@ -48,6 +49,8 @@
 		E250D85D11CF94CE0005FC2E /* AddressBookAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AddressBookAdditions.m; sourceTree = "<group>"; };
 		E280C5D611D0A884000BFCC6 /* WAYDetailContactViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYDetailContactViewController.h; sourceTree = "<group>"; };
 		E280C5D711D0A884000BFCC6 /* WAYDetailContactViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYDetailContactViewController.m; sourceTree = "<group>"; };
+		E28336B311D4B1BC0047E6B0 /* WAYEditableTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYEditableTableViewCell.h; sourceTree = "<group>"; };
+		E28336B411D4B1BC0047E6B0 /* WAYEditableTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYEditableTableViewCell.m; sourceTree = "<group>"; };
 		E2FA402311CD0570002606AC /* AddressBook.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AddressBook.framework; path = System/Library/Frameworks/AddressBook.framework; sourceTree = SDKROOT; };
 		E2FA402511CD0570002606AC /* AddressBookUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AddressBookUI.framework; path = System/Library/Frameworks/AddressBookUI.framework; sourceTree = SDKROOT; };
 		E2FA402E11CD065F002606AC /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
@@ -85,6 +88,8 @@
 				2804200A108E984D000629CD /* DetailViewController.m */,
 				E280C5D611D0A884000BFCC6 /* WAYDetailContactViewController.h */,
 				E280C5D711D0A884000BFCC6 /* WAYDetailContactViewController.m */,
+				E28336B311D4B1BC0047E6B0 /* WAYEditableTableViewCell.h */,
+				E28336B411D4B1BC0047E6B0 /* WAYEditableTableViewCell.m */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -223,6 +228,7 @@
 				E2FA403E11CD0F76002606AC /* Contact.m in Sources */,
 				E250D85E11CF94CE0005FC2E /* AddressBookAdditions.m in Sources */,
 				E280C5D811D0A884000BFCC6 /* WAYDetailContactViewController.m in Sources */,
+				E28336B511D4B1BC0047E6B0 /* WAYEditableTableViewCell.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
