@@ -274,7 +274,7 @@
     if (peoplePicker == nil) {
         peoplePicker = [ABPeoplePickerNavigationController new];
         peoplePicker.peoplePickerDelegate = self;
-        peoplePicker.modalPresentationStyle = UIModalPresentationPageSheet;
+        peoplePicker.modalPresentationStyle = UIModalPresentationFormSheet;
     }
     
     return peoplePicker;
@@ -287,65 +287,6 @@
     controller.personID = ABRecordGetRecordID(person);
     [aPeoplePicker pushViewController:controller animated:YES];
     [controller release];
-    
-    
-    /*CFIndex count = 0;
-    CFIndex index = 0;
-    // Extract all mobile phones
-    NSMutableArray *mobilePhones = [NSMutableArray new];
-    ABMultiValueRef phones = ABRecordCopyValue(person, kABPersonPhoneProperty);
-    for (index=0, count=ABMultiValueGetCount(phones); index<count; ++index) {
-        CFStringRef label = ABMultiValueCopyLabelAtIndex(phones, index);
-        if (CFStringCompare(label, kABPersonPhoneMobileLabel, 0) == kCFCompareEqualTo) {
-            CFStringRef mobilePhone = ABMultiValueCopyValueAtIndex(phones, index);
-            [mobilePhones addObject:(NSString *)mobilePhone];
-            CFRelease(mobilePhone);
-        }
-        CFRelease(label);
-    }
-    CFRelease(phones);
-    
-    // Extract all urls and try to find twitter account
-    ABMultiValueRef urls = ABRecordCopyValue(person, kABPersonURLProperty);
-    NSString *twitterAccount = nil;
-    for (index=0, count=ABMultiValueGetCount(urls); index<count && twitterAccount == nil; ++index) {
-        CFStringRef label = ABMultiValueCopyLabelAtIndex(urls, index);
-        if (CFStringCompare(label, (CFStringRef)@"twitter", kCFCompareCaseInsensitive) == kCFCompareEqualTo) {
-            twitterAccount = (NSString *)ABMultiValueCopyValueAtIndex(urls, index);
-        }
-        CFRelease(label);
-    }
-    CFRelease(urls);
-    
-    // Check, that there is no other user with same recordID
-    NSFetchRequest *countRequest = [NSFetchRequest new];
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Contact" inManagedObjectContext:managedObjectContext];
-    [countRequest setEntity:entity];
-    NSPredicate *countPredicate = [NSPredicate predicateWithFormat:@"recordID == %i", ABRecordGetRecordID(person)];
-    [countRequest setPredicate:countPredicate];
-    // TODO: deal with error
-    if (![managedObjectContext countForFetchRequest:countRequest error:nil]) {
-        // Insert new user
-        Contact *newContact = [NSEntityDescription insertNewObjectForEntityForName:@"Contact" inManagedObjectContext:managedObjectContext];
-        CFStringRef name = ABRecordCopyCompositeName(person);
-        newContact.name = (NSString *)name;
-        newContact.twitter = twitterAccount;
-        newContact.recordID = [NSNumber numberWithInt:ABRecordGetRecordID(person)];
-        for (NSString *mobilePhone in mobilePhones) {
-            NSManagedObject *newMobilePhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:managedObjectContext];
-            [newMobilePhone setValue:mobilePhone forKey:@"phone"];
-            [newContact addPhonesObject:newMobilePhone];
-        }
-        // TODO: deal with error
-        [managedObjectContext save:nil];
-        
-        CFRelease(name);
-    }
-    
-    [mobilePhones release];
-    [twitterAccount release];
-    
-    [self dismissModalViewControllerAnimated:YES];*/
     return NO;
 }
 
