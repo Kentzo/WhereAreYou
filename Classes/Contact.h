@@ -18,5 +18,7 @@
 - (void)addPhones:(NSSet *)value;
 - (void)removePhones:(NSSet *)value;
 
+- (BOOL)validatePhonesForUpdate:(NSError **)error;
+
 @end
 
