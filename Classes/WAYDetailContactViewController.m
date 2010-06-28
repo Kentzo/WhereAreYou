@@ -1,12 +1,12 @@
 #import "WAYDetailContactViewController.h"
 #import "WAYEditableTableViewCell.h"
-#import "AddressBookAdditions.h"
+#import "Contact.h"
 
 /*!
  * @enum Sections
  * @abstract Indexes of table view sections.
- * @constant kTwitterSectionIndex Section of twitter accounts.
- * @constant kPhonesSectionIndex Section of phone numbers.
+ * @constant kTwitterSectionIndex Section for twitter account.
+ * @constant kPhonesSectionIndex Section for phone numbers.
  */
 enum {
     kTwitterSectionIndex = 0,
@@ -23,22 +23,9 @@ static NSString * const WAYDetailContactTextKey = @"WAYDetailContactTextKey";
  * @var WAYDetailContactIsSelectedKey
  * @abstract Use this key to get selection status from data dictionary.
  */
-static NSString * const WAYDetailContactIsSelectedKey = @"WAYDetailContactIsSelectedKey";
+static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsCheckingKey";
 
 @interface WAYDetailContactViewController ()
-/*!
- * @property _twitterAccounts
- * @abstract Contains data for the Twitter Accounts section.
- * @discussion Obects of ths array are NSMutableDictionary instances.
- */
-@property (nonatomic, retain) NSMutableArray *_twitterAccounts;
-
-/*!
- * @property _mobilePhones
- * @abstract Contains data for the Phones section.
- * @discussion Obects of ths array are NSMutableDictionary instances.
- */
-@property (nonatomic, retain) NSMutableArray *_mobilePhones;
 
 /*!
  * @property _editingRowIndexPath
@@ -46,6 +33,8 @@ static NSString * const WAYDetailContactIsSelectedKey = @"WAYDetailContactIsSele
  * @discussion Has value only when some row is edited. Otherwise nil.
  */
 @property (nonatomic, retain) NSIndexPath *_editingRowIndexPath;
+
+@property (nonatomic, retain) NSIndexPath *_currentIndexPath;
 
 /*!
  * @property _editingRowIndexPath
@@ -55,81 +44,28 @@ static NSString * const WAYDetailContactIsSelectedKey = @"WAYDetailContactIsSele
 @property (nonatomic, assign) UITextField *_editingTextField;
 
 /*!
- * @method _updateData
- * @abstract Updates data arrays using provided record id personID.
- */
-- (void)_updateData;
-
-/*!
- * @method _insertNewObjectAtIndexPath:
- * @abstract Inserts new object to the data array.
- * @param indexPath Index path to insert.
- */
-- (void)_insertNewObjectAtIndexPath:(NSIndexPath *)indexPath;
-
-/*!
- * @method _startEditingTextFieldAtIndexPath:
- * @abstract Starts editing cell on row at index path indexPath.
- * @param indexPath Index path of the row to edit.
- * @discussion Makes cell's text field first responder, switches contentView.userInteractionEnabled to YES and saves index path and pointer to the text field.
- */
-- (void)_startEditingTextFieldAtIndexPath:(NSIndexPath *)indexPath;
-
-/*!
  * @method _stopEditingTextField
  * @abstract Stops editing cell at index path _editingRowIndexPath.
  * @discussion Resigns first responder, switches contentView.userInteractionEnabled to NO and nullyfies _editingRowIndexPath and _editingTextField.
  */
 - (void)_stopEditingTextField;
 
-/*!
- * @method _fixIndexPath:afterDeletionIndexPath:
- * @abstract Checks the section and row of given index paths and, if needed, fixes indexPath by moving it up.
- * @param indexPath Index path that needs to be fixed.
- * @param indexPathToDelete Index path of the row that will be deleted.
- * @result Fixed index path.
- */
-- (NSIndexPath *)_fixIndexPath:(NSIndexPath *)indexPath afterDeletionIndexPath:(NSIndexPath *)indexPathToDelete;
-
-/*!
- * @method _fixSelectedTwitterURLAfterDeletionIndexPath:
- * @abstract Checks the section and row of given index path and _selectedTwitterAccount and, if needed, fixes _selectedTwitterAccount by moving it up.
- * @param indexPathToDelete Index path of the row that will be deleted.
- */
-- (void)_fixSelectedTwitterURLAfterDeletionIndexPath:(NSIndexPath *)indexPathToDelete;
-
-
-/*!
- * @method _done:
- * @abstract Action for the "Done" navigation button.
- * @param sender Object that sends this message.
- */
-- (void)_done:(id)sender;
-
-/*!
- * @method _handleLongPress:
- * @abstract Action for the Long Press gesture of a cell.
- * @param gestureRecognizer Gesture that is triggered.
- */
-- (void)_handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer;
-
 @end
 
 
 @implementation WAYDetailContactViewController
-@synthesize personID;
-@synthesize delegate;
-@synthesize _twitterAccounts;
-@synthesize _mobilePhones;
+@synthesize contact;
+@synthesize phoneFormatter;
 @synthesize _editingRowIndexPath;
+@synthesize _currentIndexPath;
 @synthesize _editingTextField;
 
 #pragma mark -
 #pragma mark Initialization
 
 - (void)dealloc {
-    [_twitterAccounts release];
-    [_mobilePhones release];
+    [contact release];
+    [phoneFormatter release];
     [_editingRowIndexPath release];
     [super dealloc];
 }
@@ -141,35 +77,156 @@ static NSString * const WAYDetailContactIsSelectedKey = @"WAYDetailContactIsSele
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.clearsSelectionOnViewWillAppear = NO;
     self.tableView.allowsSelectionDuringEditing = YES;
-    self.editing = YES;
-    
-    UIBarButtonItem *doneItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
-                                                                              target:self action:@selector(_done:)];
-    self.navigationItem.rightBarButtonItem = doneItem;
-    [doneItem release];
-}
-
-
-- (BOOL)canBecomeFirstResponder {
-    return YES;
 }
 
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-    [self _updateData];
+    [contact addObserver:self forKeyPath:@"phones" options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld) context:NULL];
+    [self.tableView reloadData];
 }
 
 
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
+    [contact removeObserver:self forKeyPath:@"phones"];
 }
 
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
     return YES;
+}
+
+
+- (void)setEditing:(BOOL)editing animated:(BOOL)animated {
+    [super setEditing:editing animated:animated];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_contactMobilePhones count] inSection:kPhonesSectionIndex];
+    if (animated) {
+        if (editing) {
+            [self.tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+        }
+        else {
+            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+        }
+    }
+    else {
+        [self.tableView reloadData];
+    }
+
+}
+
+#pragma mark -
+#pragma mark Data managment
+
+- (void)setContact:(Contact *)newContact {
+    [newContact retain];
+    [contact release];
+    contact = newContact;
+    [_contactMobilePhones release];
+    _contactMobilePhones = [[contact.phones allObjects] mutableCopy];
+    self.title = contact.name;
+}
+
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    
+    NSKeyValueChange changeType = [[change objectForKey:NSKeyValueChangeKindKey] integerValue];
+    if ([keyPath isEqualToString:@"phones"]) {
+        if (changeType == NSKeyValueChangeRemoval)
+        {
+            // Collect indexes of removed objects in _contactMobilePhones.
+            NSArray *removedObjects = [change objectForKey:NSKeyValueChangeOldKey];
+            NSMutableIndexSet *indexSet = [[NSMutableIndexSet alloc] init];
+            for (NSManagedObject *phone in removedObjects) {
+                [indexSet addIndex:[_contactMobilePhones indexOfObjectIdenticalTo:phone]];
+            }
+            
+            [self removePhonesAtIndexes:indexSet];
+
+            [indexSet release];
+        }
+        else if (changeType == NSKeyValueChangeInsertion) {
+            
+            // Collect indexes of inserted objects.
+            // Objects will be insertes at the end of _contactMobilePhones.
+            NSArray *insertedObjects = [[change objectForKey:NSKeyValueChangeNewKey] allObjects];
+            NSMutableIndexSet *indexSet = [[NSMutableIndexSet alloc] init];
+            NSUInteger index = [_contactMobilePhones count];
+            for (NSManagedObject *phone in insertedObjects) {
+                [indexSet addIndex:index++];
+            }
+            
+            [self insertPhones:insertedObjects atIndexes:indexSet];
+            
+            [indexSet release];
+        }
+    }
+}
+
+
+- (void)insertPhones:(NSArray *)phones atIndexes:(NSIndexSet *)indexSet {
+    
+    // Extract indexes to C array.
+    NSUInteger count = [indexSet count];
+    NSUInteger *indexes = calloc(count, sizeof(NSUInteger));
+    [indexSet getIndexes:indexes maxCount:count inIndexRange:nil];
+    
+    // Create index paths from indexes in order to delete them from the table.
+    [_contactMobilePhones insertObjects:phones atIndexes:indexSet];
+    NSMutableArray *indexPaths = [[NSMutableArray alloc] initWithCapacity:count];
+    NSUInteger i;
+    for (i=0; i<count; ++i) {
+        [indexPaths addObject:[NSIndexPath indexPathForRow:indexes[i] inSection:kPhonesSectionIndex]];
+    }
+    [self.tableView beginUpdates];
+    [self.tableView insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationFade];
+    [self.tableView endUpdates];
+    [indexPaths release];
+    free(indexes), indexes = NULL;
+}
+
+
+- (void)removePhonesAtIndexes:(NSIndexSet *)indexSet {
+    
+    // Extract indexes to C array.
+    NSUInteger count = [indexSet count];
+    NSUInteger *indexes = calloc(count, sizeof(NSUInteger));
+    [indexSet getIndexes:indexes maxCount:count inIndexRange:nil];
+    
+    // Update _currentIndexPath if needed.
+    if (_currentIndexPath != nil && [_currentIndexPath section] == kPhonesSectionIndex) {
+        NSUInteger i, currentRow, countOfUpperRows;
+        for (i=0, currentRow=[_currentIndexPath row], countOfUpperRows=0; i<count; ++i) {
+            if (indexes[i] < currentRow) {
+                ++countOfUpperRows;
+            }
+            else if (indexes[i] == currentRow) {
+                self._currentIndexPath = nil;
+                break;
+            }
+            
+        }
+        if (_currentIndexPath != nil) {
+            self._currentIndexPath = [NSIndexPath indexPathForRow:(currentRow - countOfUpperRows) inSection:kPhonesSectionIndex];
+        }
+    }
+    
+    // Remove objects at indexes.
+    [_contactMobilePhones removeObjectsAtIndexes:indexSet];
+    
+    // Create index paths from indexes in order to delete them from the table.
+    NSMutableArray *indexPaths = [[NSMutableArray alloc] initWithCapacity:count];
+    NSUInteger i;
+    for (i=0; i<count; ++i) {
+        [indexPaths addObject:[NSIndexPath indexPathForRow:indexes[i] inSection:kPhonesSectionIndex]];
+    }
+    [self.tableView beginUpdates];
+    [self.tableView deleteRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationFade];
+    [self.tableView endUpdates];
+    [indexPaths release];
+    
+    free(indexes), indexes = NULL;
 }
 
 
@@ -182,27 +239,41 @@ static NSString * const WAYDetailContactIsSelectedKey = @"WAYDetailContactIsSele
 
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    // Return number of entires in section plus 1 for add button
-    return [_data[section] count] + 1;
+    switch (section) {
+        case kTwitterSectionIndex:
+            return 1;
+        case kPhonesSectionIndex:
+            // Return number of phones + 1 for add button
+            if ([self isEditing]) {
+                return [_contactMobilePhones count] + 1;
+            }
+            else {
+                return [_contactMobilePhones count];
+            }
+        default:
+            return 0;
+    }
 }
 
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    if (section == kTwitterSectionIndex) {
-        return @"Twitter accounts";
-    }
-    else {
-        return @"Phone numbers";
+    switch (section) {
+        case kTwitterSectionIndex:
+            return @"Twitter account";
+        case kPhonesSectionIndex:
+            return @"Phone numbers";
+        default:
+            return @"";
     }
 }
 
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    if (section == kTwitterSectionIndex) {
-        return @"Hold on row to edit";
-    }
-    else {
-        return @"Including country code";
+    switch (section) {
+        case kPhonesSectionIndex:
+            return @"Including country code\nAt least one number";
+        default:
+            return nil;
     }
 }
  
@@ -215,185 +286,127 @@ static NSString * const WAYDetailContactIsSelectedKey = @"WAYDetailContactIsSele
     
     NSUInteger section = [indexPath section];
     NSUInteger row = [indexPath row];
-    UITableViewCell *cell = nil;
-    if (row < [_data[section] count]) {
-        cell = [tableView dequeueReusableCellWithIdentifier:WAYEditableCellIdentifier];
+    if (section == kTwitterSectionIndex || section == kPhonesSectionIndex && row < [_contactMobilePhones count]) {
+        WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[tableView dequeueReusableCellWithIdentifier:WAYEditableCellIdentifier];
         if (cell == nil) {
             cell = [[[WAYEditableTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:WAYEditableCellIdentifier] autorelease];
-            ((WAYEditableTableViewCell *)cell).textField.delegate = self;
-            ((WAYEditableTableViewCell *)cell).textField.returnKeyType = UIReturnKeyDone;
-            ((WAYEditableTableViewCell *)cell).textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
-            ((WAYEditableTableViewCell *)cell).textField.autocorrectionType = UITextAutocorrectionTypeNo;
-            UILongPressGestureRecognizer *gesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(_handleLongPress:)];
-            [cell addGestureRecognizer:gesture];
-            [gesture release];
+            cell.textField.delegate = self;
+            cell.textField.returnKeyType = UIReturnKeyDone;
+            cell.textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+            cell.textField.autocorrectionType = UITextAutocorrectionTypeNo;
+            cell.selectionStyle = UITableViewCellSelectionStyleNone;
         }
         
-        // Set up text field keyboard
         if (section == kTwitterSectionIndex) {
             // Use URL keyboard for twitter account cells
-            ((WAYEditableTableViewCell *)cell).textField.keyboardType = UIKeyboardTypeURL;
-            ((WAYEditableTableViewCell *)cell).textField.placeholder = @"URL";
+            cell.textField.keyboardType = UIKeyboardTypeURL;
+            cell.textField.placeholder = @"URL";
+            
+            cell.textField.text = contact.twitter;
         }
         else {
             // Use Number pad for phone number cells
-            ((WAYEditableTableViewCell *)cell).textField.keyboardType = UIKeyboardTypePhonePad;
-            ((WAYEditableTableViewCell *)cell).textField.placeholder = @"Phone";
+            cell.textField.keyboardType = UIKeyboardTypePhonePad;
+            cell.textField.placeholder = @"Phone";
+            NSString *text = [[_contactMobilePhones objectAtIndex:row] valueForKey:@"phone"];
+            if ([text isKindOfClass:[NSNull class]]) {
+                text = @"";
+            }
+            cell.textField.text = text;
         }
         
-        if (_editingRowIndexPath && [_editingRowIndexPath compare:indexPath] == NSOrderedSame) {
-            cell.contentView.userInteractionEnabled = YES;
-        }
-        else {
-            cell.contentView.userInteractionEnabled = NO;
-        }
-
-        // Set up text field data
-        NSDictionary *dataItem = [_data[section] objectAtIndex:row];
-        ((WAYEditableTableViewCell *)cell).textField.text = [dataItem objectForKey:WAYDetailContactTextKey];
-        ((WAYEditableTableViewCell *)cell).editingAccessoryType = [[dataItem objectForKey:WAYDetailContactIsSelectedKey] boolValue] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+        return cell;
     }
     else {
-        cell = [tableView dequeueReusableCellWithIdentifier:AddCellIdentifier];
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:AddCellIdentifier];
         if (cell == nil) {
             cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:AddCellIdentifier] autorelease];
             // Make text color like text color of add row in Contacts.app on iPhone
             cell.textLabel.textColor = [UIColor colorWithRed:0.294 green:0.345 blue:0.447 alpha:1.0];
         }
         cell.textLabel.text = @"Add new";
+        
+        return cell;
     }
-    
-    return cell;
 }
 
 
-// Override to support conditional editing of the table view.
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
-    return YES;
+    // User can edit only phone numbers section
+    return [indexPath section] == kPhonesSectionIndex;
 }
 
 
 // Override to support editing the table view.
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+        
+    NSAssert([indexPath section] == kPhonesSectionIndex, @"User can edit only phone numbers section");
     
-    [tableView beginUpdates];
-    if (_editingRowIndexPath && _editingTextField) {
-        NSUInteger editingSection = [_editingRowIndexPath section];
-        NSUInteger editingRow = [_editingRowIndexPath row];
-        if ([_editingTextField.text length]) {
-            // Save content of the editing text field.
-            NSMutableDictionary *dataItem = [_data[editingSection] objectAtIndex:editingRow];
-            [dataItem setObject:_editingTextField.text forKey:WAYDetailContactTextKey];
-        }
-        else if ([_editingRowIndexPath compare:indexPath] != NSOrderedSame) {
-            // Remove the row, if it has no text.
-            [_data[editingSection] removeObjectAtIndex:editingRow];
-            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:_editingRowIndexPath] withRowAnimation:UITableViewRowAnimationFade];
-            indexPath = [self _fixIndexPath:indexPath afterDeletionIndexPath:_editingRowIndexPath];
-            [self _fixSelectedTwitterURLAfterDeletionIndexPath:_editingRowIndexPath];
-        }
+    self._currentIndexPath = indexPath;
+    [self.tableView beginUpdates];
+    if (_editingRowIndexPath != nil) {
         [self _stopEditingTextField];
     }
     
-    NSUInteger section = [indexPath section];
-    NSUInteger row = [indexPath row];
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        [_data[section] removeObjectAtIndex:row];
-        [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
-        [self _fixSelectedTwitterURLAfterDeletionIndexPath:indexPath];
-        [tableView endUpdates];
+        // If user tries to delete currently edited row which has text field with no text, do nothing,
+        // because this row was deleted after commiting changes.
+        if (_currentIndexPath != nil) {
+            [contact removePhonesObject:[_contactMobilePhones objectAtIndex:[_currentIndexPath row]]];
+        }
+        [self.tableView endUpdates];
     }   
     else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        [self _insertNewObjectAtIndexPath:indexPath];
-        [tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
-        [tableView endUpdates];
-        [self _startEditingTextFieldAtIndexPath:indexPath];
-    }   
+        NSManagedObject *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
+        [newPhone setValue:contact forKey:@"contact"];
+        [contact addPhonesObject:newPhone];
+        [self.tableView endUpdates];
+        WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[tableView cellForRowAtIndexPath:_currentIndexPath];
+        [cell.textField becomeFirstResponder];
+    } 
+    self._currentIndexPath = nil;
 }
 
 
 #pragma mark -
 #pragma mark Table view delegate
 
+- (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if ([indexPath section] == kPhonesSectionIndex && [indexPath row] == [_contactMobilePhones count]) {
+        return indexPath;
+    }
+    else {
+        return nil;
+    }
+}
+
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    [tableView beginUpdates];
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
-
-    if (_editingRowIndexPath && _editingTextField) {
-        NSUInteger editingSection = [_editingRowIndexPath section];
-        NSUInteger editingRow = [_editingRowIndexPath row];
-        if ([_editingTextField.text length]) {
-            // Save content of the editing text field.
-            NSMutableDictionary *dataItem = [_data[editingSection] objectAtIndex:editingRow];
-            [dataItem setObject:_editingTextField.text forKey:WAYDetailContactTextKey];
-        }
-        else {
-            // Remove the row, if it has no text.
-            [_data[editingSection] removeObjectAtIndex:editingRow];
-            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:_editingRowIndexPath] withRowAnimation:UITableViewRowAnimationFade];
-
-            indexPath = [self _fixIndexPath:indexPath afterDeletionIndexPath:_editingRowIndexPath];
-            [self _fixSelectedTwitterURLAfterDeletionIndexPath:_editingRowIndexPath];
-        }
+    NSAssert([indexPath section] == kPhonesSectionIndex, @"User can edit only phone numbers section");
+    
+    [self.tableView beginUpdates];
+    self._currentIndexPath = indexPath;
+    if (_editingRowIndexPath != nil) {
         [self _stopEditingTextField];
     }
     
-    NSUInteger section = [indexPath section];
-    NSUInteger row = [indexPath row];    
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    if (row < [_data[section] count]) {
-        UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
-        NSMutableDictionary *dataItem = [_data[section] objectAtIndex:row];
-        if (section == kTwitterSectionIndex) {
-            // Only one twitter account can be seleted at the same time.
-            if (row == _selectedTwitterAccount) {
-                // User clicked on already selected row
-                // Unmark it and set _selectedTwitterURL to NSUIntegerMax
-                [dataItem setObject:[NSNumber numberWithBool:NO] forKey:WAYDetailContactIsSelectedKey];
-                cell.editingAccessoryType = UITableViewCellAccessoryNone;
-                _selectedTwitterAccount = NSUIntegerMax;
-            }
-            else {
-                // Mark selected row
-                [dataItem setObject:[NSNumber numberWithBool:YES] forKey:WAYDetailContactIsSelectedKey];
-                cell.editingAccessoryType = UITableViewCellAccessoryCheckmark;
-                if (_selectedTwitterAccount < [_twitterAccounts count]) {
-                    // There is a row that is already marked. Unmark it.
-                    [[_twitterAccounts objectAtIndex:_selectedTwitterAccount] setObject:[NSNumber numberWithBool:NO] forKey:WAYDetailContactIsSelectedKey];
-                    NSIndexPath *oldIndexPath = [NSIndexPath indexPathForRow:_selectedTwitterAccount inSection:kTwitterSectionIndex];
-                    UITableViewCell *oldCell = [tableView cellForRowAtIndexPath:oldIndexPath];
-                    oldCell.editingAccessoryType = UITableViewCellAccessoryNone;
-                }
-                _selectedTwitterAccount = row;
-            }
-        }
-        else {
-            // Just select and deselect phone number rows.
-            if ([[dataItem objectForKey:WAYDetailContactIsSelectedKey] boolValue]) {
-                [dataItem setObject:[NSNumber numberWithBool:NO] forKey:WAYDetailContactIsSelectedKey];
-                cell.editingAccessoryType = UITableViewCellAccessoryNone;
-            }
-            else {
-                [dataItem setObject:[NSNumber numberWithBool:YES] forKey:WAYDetailContactIsSelectedKey];
-                cell.editingAccessoryType = UITableViewCellAccessoryCheckmark;
-            }
-        }
-        [tableView endUpdates];
-    }
-    else {
-        // Add button is pressed.
-        [self _insertNewObjectAtIndexPath:indexPath];
-        [tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
-        [tableView endUpdates];
-        [self _startEditingTextFieldAtIndexPath:indexPath];
-    }
+    NSManagedObject *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
+    [newPhone setValue:contact forKey:@"contact"];
+    [contact addPhonesObject:newPhone];
+    [self.tableView endUpdates];
+    WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[tableView cellForRowAtIndexPath:_currentIndexPath];
+    [cell.textField becomeFirstResponder];
+    self._currentIndexPath = nil;
 }
 
 
 - (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
     // Use UITableViewCellEditingStyleDelete style for all rows except add buttons. Use UITableViewCellEditingStyleInsert for them.
-    if ([indexPath row] < [_data[[indexPath section]] count]) {
+    if ([indexPath row] < [_contactMobilePhones count]) {
         return UITableViewCellEditingStyleDelete;
     }
     else {
@@ -403,186 +416,78 @@ static NSString * const WAYDetailContactIsSelectedKey = @"WAYDetailContactIsSele
 
 
 #pragma mark -
-#pragma mark UITextFieldDelegate
+#pragma mark Text editing
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    
-    NSUInteger editingSection = [_editingRowIndexPath section];
-    NSUInteger editingRow = [_editingRowIndexPath row];
-    if ([_editingTextField.text length]) {
-        // Save content of the editing text field.
-        NSMutableDictionary *dataItem = [_data[editingSection] objectAtIndex:editingRow];
-        [dataItem setObject:_editingTextField.text forKey:WAYDetailContactTextKey];
-    }
-    else {
-        // Remove the row, if it has no text.
-        [_data[editingSection] removeObjectAtIndex:editingRow];
-        [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:_editingRowIndexPath] withRowAnimation:UITableViewRowAnimationFade];
-        [self _fixSelectedTwitterURLAfterDeletionIndexPath:_editingRowIndexPath];
-    }
+
     [self _stopEditingTextField];
     return NO;
 }
 
 
-- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
+- (void)textFieldDidBeginEditing:(UITextField *)textField {
+    
+    if (_editingRowIndexPath != nil) {
+        [self _stopEditingTextField];
+    }
+    
+    CGPoint point = [self.tableView convertPoint:textField.frame.origin fromView:textField];
+    self._editingRowIndexPath = [self.tableView indexPathForRowAtPoint:point];
+    self._editingTextField = textField;
+}
+
+
+- (void)textFieldDidEndEditing:(UITextField *)textField {
     
     NSAssert(_editingRowIndexPath != nil, @"_editingRowIndexPath must not be nil");
-    if ([_editingRowIndexPath section] == kTwitterSectionIndex) {
-        return YES;
-    }
-    else {
-        NSScanner *scanner = [NSScanner scannerWithString:string];
-        return [scanner scanInteger:NULL];
-    }
-}
-
-
-#pragma mark -
-#pragma mark Private
-
-- (void)_updateData {
     
-    ABAddressBookRef addressBook = ABAddressBookCreate();
-    ABRecordRef person = ABAddressBookGetPersonWithRecordID(addressBook, personID);
-    if (person != NULL) {
-        // Collect all urls that contain "twitter.com/" substring
-        NSArray *urls = CollectUrlsThatContainString(person, (CFStringRef)@"twitter.com/");
-        NSMutableArray *newUrls = [NSMutableArray arrayWithCapacity:[urls count]];
-        for (NSString *url in urls) {
-            // All rows are deselected by defauld
-            NSMutableDictionary *selectableUrl = [NSMutableDictionary dictionaryWithObjectsAndKeys:url, WAYDetailContactTextKey, [NSNumber numberWithBool:NO], WAYDetailContactIsSelectedKey, nil];
-            [newUrls addObject:selectableUrl];
-        }
-        self._twitterAccounts = newUrls;
-        _data[kTwitterSectionIndex] = _twitterAccounts;
-        _selectedTwitterAccount = NSUIntegerMax;
-        
-        // Collect all mobile phones
-        NSArray *phones = CollectMobilePhones(person);
-        NSMutableArray *newPhones = [NSMutableArray arrayWithCapacity:[phones count]];
-        for (NSString *phone in phones) {
-            // All phone are selected by default
-            NSMutableDictionary *selectablePhone = [NSMutableDictionary dictionaryWithObjectsAndKeys:phone, WAYDetailContactTextKey, [NSNumber numberWithBool:YES], WAYDetailContactIsSelectedKey, nil];
-            [newPhones addObject:selectablePhone];
-        }
-        self._mobilePhones = newPhones;
-        _data[kPhonesSectionIndex] = _mobilePhones;
-        
-        self.title = (NSString *)ABRecordCopyCompositeName(person);
+    if ([_editingRowIndexPath section] == kPhonesSectionIndex && ![textField.text length]) {
+        [contact removePhonesObject:[_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]]];
     }
-    CFRelease(addressBook);
-}
-
-
-- (void)_insertNewObjectAtIndexPath:(NSIndexPath *)indexPath {
     
-    NSUInteger section = [indexPath section];
-    NSUInteger row = [indexPath row];
-    NSMutableDictionary *newDataItem = [[NSMutableDictionary alloc] init];        
-    if (section == kTwitterSectionIndex) {
-        [newDataItem setObject:[NSNumber numberWithBool:NO] forKey:WAYDetailContactIsSelectedKey];
-    }
-    else {
-        [newDataItem setObject:[NSNumber numberWithBool:YES] forKey:WAYDetailContactIsSelectedKey];
-    }
-    [_data[section] insertObject:newDataItem atIndex:row];
-    [newDataItem release];
-}
-
-
-- (void)_startEditingTextFieldAtIndexPath:(NSIndexPath *)indexPath {
-    
-    WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[self.tableView cellForRowAtIndexPath:indexPath];
-    cell.contentView.userInteractionEnabled = YES;
-    self._editingRowIndexPath = indexPath;
-    self._editingTextField = cell.textField;
-    [cell.textField becomeFirstResponder];
-}
-
-
-- (void)_stopEditingTextField {
-    
-    NSAssert(_editingRowIndexPath != nil, @"_editingRowIndexPath must not be nil");
-    NSAssert(_editingTextField != nil, @"_editingTextField must not be nil");
-    
-    [_editingTextField resignFirstResponder];
-    UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:_editingRowIndexPath];
-    cell.contentView.userInteractionEnabled = NO;
     self._editingTextField = nil;
     self._editingRowIndexPath = nil;
 }
 
 
-- (NSIndexPath *)_fixIndexPath:(NSIndexPath *)indexPath afterDeletionIndexPath:(NSIndexPath *)indexPathToDelete {
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
     
-    NSAssert(indexPath != nil, @"indexPath must not be nil");
-    NSAssert(indexPathToDelete != nil, @"indexPathToDelete must not be nil");
+    NSAssert(textField == _editingTextField, @"You are changing textfield, that isn't marked as _editingTextField");
     
-    if ([indexPath section] == [indexPathToDelete section] && [indexPath row] > [indexPathToDelete row]) {
-        indexPath = [NSIndexPath indexPathForRow:([indexPath row] - 1) inSection:[indexPath section]];
-    }
-    return indexPath;
+    NSString *text = [textField.text stringByReplacingCharactersInRange:range withString:string];
+    [self setText:text forRowAtIndexPath:_editingRowIndexPath];
+    return YES;
 }
 
 
-- (void)_fixSelectedTwitterURLAfterDeletionIndexPath:(NSIndexPath *)indexPathToDelete {
-    
-    NSAssert(indexPathToDelete != nil, @"indexPathToDelete must not be nil");
-    
-    if ([indexPathToDelete section] == kTwitterSectionIndex && _selectedTwitterAccount < [_twitterAccounts count]) {
-        if ([indexPathToDelete row] == _selectedTwitterAccount) {
-            // When we delete marked twitter url, we have to set _selectedTwitterURL to NSUIntegerMax
-            _selectedTwitterAccount = NSUIntegerMax;
-        }
-        else if ([indexPathToDelete row] < _selectedTwitterAccount) {
-            _selectedTwitterAccount -= 1;
-        }
-    }
+- (BOOL)textFieldShouldBeginEditing:(UITextField *)textFiel {
+    // User can edit rows only in editing mode.
+    return [self isEditing];
 }
 
 
-- (void)_done:(id)sender {
+- (void)setText:(NSString *)text forRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    NSString *twitterAccount = nil;
-    if (_selectedTwitterAccount < [_twitterAccounts count]) {
-        twitterAccount = [_twitterAccounts objectAtIndex:_selectedTwitterAccount];
-        NSRange range = [twitterAccount rangeOfString:@"twitter.com/"];
-        if (range.location != NSNotFound) {
-            twitterAccount = [twitterAccount substringFromIndex:(range.location + range.length)];
-        }
+    switch ([indexPath section]) {
+        case kTwitterSectionIndex:
+            contact.twitter = text;
+            break;
+        case kPhonesSectionIndex:
+            [[_contactMobilePhones objectAtIndex:[indexPath row]] setValue:text forKey:@"phone"];
+            break;
     }
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"%K = YES", WAYDetailContactIsSelectedKey];
-    NSArray *selectedPhones = [[_mobilePhones filteredArrayUsingPredicate:predicate] valueForKey:WAYDetailContactTextKey];
-    [delegate detailContactViewController:self didDoneWithTwitterAccount:twitterAccount phoneNumbers:selectedPhones];
 }
 
+#pragma mark -
+#pragma mark Private
 
-- (void)_handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer {
+- (void)_stopEditingTextField {
     
-    if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
-        NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:[gestureRecognizer locationInView:self.tableView]];
-        if (_editingRowIndexPath && _editingTextField) {
-            NSUInteger editingSection = [_editingRowIndexPath section];
-            NSUInteger editingRow = [_editingRowIndexPath row];
-            if ([_editingTextField.text length]) {
-                // Save content of the editing text field.
-                NSMutableDictionary *dataItem = [_data[editingSection] objectAtIndex:editingRow];
-                [dataItem setObject:_editingTextField.text forKey:WAYDetailContactTextKey];
-            }
-            else {
-                // Remove the row, if it has no text.
-                [_data[editingSection] removeObjectAtIndex:editingRow];
-                [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:_editingRowIndexPath] withRowAnimation:UITableViewRowAnimationFade];
-                
-                indexPath = [self _fixIndexPath:indexPath afterDeletionIndexPath:_editingRowIndexPath];
-                [self _fixSelectedTwitterURLAfterDeletionIndexPath:_editingRowIndexPath];
-            }
-            [self _stopEditingTextField];
-        }
-        // Enable content view of touched cell
-        [self _startEditingTextFieldAtIndexPath:indexPath];
-    }
+    NSAssert(_editingRowIndexPath != nil, @"_editingRowIndexPath must not be nil");
+    NSAssert(_editingTextField != nil, @"_editingTextField must not be nil");
+
+    [_editingTextField resignFirstResponder];
+    [self becomeFirstResponder];
 }
 
 @end

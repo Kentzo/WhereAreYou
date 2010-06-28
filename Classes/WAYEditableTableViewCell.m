@@ -68,8 +68,6 @@
 @end
 
 
-
-
 @implementation WAYEditableTableViewCell
 
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
