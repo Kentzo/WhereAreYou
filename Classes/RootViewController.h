@@ -1,8 +1,9 @@
+#import "WAYAddNewContactViewController.h"
 
 
 @class DetailViewController;
 
-@interface RootViewController : UITableViewController <NSFetchedResultsControllerDelegate, ABPeoplePickerNavigationControllerDelegate> {
+@interface RootViewController : UITableViewController <NSFetchedResultsControllerDelegate, ABPeoplePickerNavigationControllerDelegate, WAYAddNewContactViewControllerDelegate> {
     
     DetailViewController *detailViewController;
     

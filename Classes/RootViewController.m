@@ -1,13 +1,12 @@
 #import "RootViewController.h"
 #import "DetailViewController.h"
 #import "WAYDetailContactViewController.h"
+#import "WAYEditContactViewController.h"
+#import "AddressBookAdditions.h"
 #import "Contact.h"
 
-/*
- This template does not ensure user interface consistency during editing operations in the table view. You must implement appropriate methods to provide the user experience you require.
- */
 
-@interface RootViewController ()
+@interface RootViewController () 
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath;
 @end
 
@@ -85,13 +84,6 @@
 }
 
 
-- (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath {
-    Contact *contact = [fetchedResultsController objectAtIndexPath:indexPath];
-    cell.textLabel.text = contact.name;
-    cell.detailTextLabel.text = [[contact.phones anyObject] valueForKey:@"phone"];
-}
-
-
 #pragma mark -
 #pragma mark Add a new object
 
@@ -102,6 +94,13 @@
 
 #pragma mark -
 #pragma mark Table view data source
+
+- (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath {
+    Contact *contact = [fetchedResultsController objectAtIndexPath:indexPath];
+    cell.textLabel.text = contact.name;
+    cell.detailTextLabel.text = [[contact.phones anyObject] valueForKey:@"phone"];
+}
+
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     return [[fetchedResultsController sections] count];
@@ -207,6 +206,7 @@
     [sortDescriptors release];
     
     return fetchedResultsController;
+
 }    
 
 
@@ -276,17 +276,58 @@
         peoplePicker.peoplePickerDelegate = self;
         peoplePicker.modalPresentationStyle = UIModalPresentationFormSheet;
     }
-    
+    [peoplePicker popToRootViewControllerAnimated:NO];
     return peoplePicker;
 }
 
 
 - (BOOL)peoplePickerNavigationController:(ABPeoplePickerNavigationController *)aPeoplePicker shouldContinueAfterSelectingPerson:(ABRecordRef)person {
     
-    WAYDetailContactViewController *controller = [[WAYDetailContactViewController alloc] initWithStyle:UITableViewStyleGrouped];
-    controller.personID = ABRecordGetRecordID(person);
-    [aPeoplePicker pushViewController:controller animated:YES];
-    [controller release];
+    ABRecordID recordID = ABRecordGetRecordID(person);
+    
+    // Check that selected user doesn't exist in contacts list
+    NSFetchRequest *request = [[NSFetchRequest alloc] init];
+    [request setEntity:[NSEntityDescription entityForName:@"Contact" inManagedObjectContext:managedObjectContext]];
+    [request setPredicate:[NSPredicate predicateWithFormat:@"recordID == %d", recordID]];
+    NSArray *contacts = [managedObjectContext executeFetchRequest:request error:nil];
+    [request release];
+    if (![contacts count]) {
+        // Create new Contact
+        NSString *name = (NSString *)ABRecordCopyCompositeName(person);
+        NSArray *possibleTwitterAccounts = CollectUrlsThatContainString(person, (CFStringRef)@"twitter.com/");
+        NSString *twitterAccount = nil;
+        if ([possibleTwitterAccounts count]) {
+            twitterAccount = [possibleTwitterAccounts lastObject];
+        }
+        NSArray *mobilePhones = CollectMobilePhones(person);
+        NSMutableSet *phones = [[NSMutableSet alloc] init];
+        for (NSString *phone in mobilePhones) {
+            NSManagedObject *mobilePhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:managedObjectContext];
+            [mobilePhone setValue:phone forKey:@"phone"];
+            [phones addObject:mobilePhone];
+        }
+        Contact *contact = [NSEntityDescription insertNewObjectForEntityForName:@"Contact" inManagedObjectContext:managedObjectContext];
+        contact.name = name;
+        contact.recordID = [NSNumber numberWithInt:recordID];
+        contact.twitter = twitterAccount;
+        contact.phones = phones;
+        [name release];
+        [phones release];
+        
+        WAYAddNewContactViewController *controller = [[WAYAddNewContactViewController alloc] initWithStyle:UITableViewStyleGrouped];
+        controller.contact = contact;
+        controller.delegate = self;
+        [aPeoplePicker pushViewController:controller animated:YES];
+        [controller release];   
+    }
+    else {
+        WAYEditContactViewController *controller = [[WAYEditContactViewController alloc] initWithStyle:UITableViewStyleGrouped];
+        controller.contact = [contacts lastObject];
+        [aPeoplePicker pushViewController:controller animated:YES];
+        [controller release];
+    }
+
+    
     return NO;
 }
 
@@ -303,6 +344,13 @@
     [self dismissModalViewControllerAnimated:YES];
 }
 
+
+#pragma mark -
+#pragma mark WAYAddNewContactViewControllerDelegate
+
+- (void)addNewContactViewControllerDidDone:(WAYAddNewContactViewController *)controller {
+    [self dismissModalViewControllerAnimated:YES];
+}
 
 #pragma mark -
 #pragma mark Memory management
