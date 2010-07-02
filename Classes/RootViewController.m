@@ -1,31 +1,42 @@
 #import "RootViewController.h"
-#import "DetailViewController.h"
+#import "WAYMapViewController.h"
 #import "WAYDetailContactViewController.h"
 #import "WAYEditContactViewController.h"
 #import "AddressBookAdditions.h"
 #import "Contact.h"
+#import "Phone.h"
 
 
 @interface RootViewController () 
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath;
+- (void)_stopEditingContact;
 @end
 
 
 @implementation RootViewController
 
-@synthesize detailViewController;
+@synthesize mapViewController;
 @synthesize fetchedResultsController;
 @synthesize managedObjectContext;
 @synthesize peoplePicker;
 
 - (void)dealloc {
     
-    [detailViewController release];
+    [mapViewController release];
     [fetchedResultsController release];
     [managedObjectContext release];
     [peoplePicker release];
     
     [super dealloc];
+}
+
+
+- (void)setEditing:(BOOL)editing animated:(BOOL)animated {
+    
+    [super setEditing:editing animated:animated];
+    if (editing) {
+        mapViewController.contact = nil;
+    }
 }
 
 
@@ -37,6 +48,7 @@
     [super viewDidLoad];
     self.clearsSelectionOnViewWillAppear = NO;
     self.contentSizeForViewInPopover = CGSizeMake(320.0, 600.0);
+    self.navigationItem.rightBarButtonItem = self.editButtonItem;
 
     NSError *error = nil;
     // TODO: deal with error
@@ -57,32 +69,10 @@
 }
 
 
-/*
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-}
-*/
-/*
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-}
- */
-/*
-- (void)viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:animated];
-}
- */
-/*
-- (void)viewDidDisappear:(BOOL)animated {
-    [super viewDidDisappear:animated];
-}
- */
-
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
     // Ensure that the view controller supports rotation and that the split view can therefore show in both portrait and landscape.    
     return YES;
 }
-
 
 #pragma mark -
 #pragma mark Add a new object
@@ -96,9 +86,21 @@
 #pragma mark Table view data source
 
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath {
+    static ABAddressBookRef addressBook = NULL;
+    if (addressBook == NULL) {
+        addressBook = ABAddressBookCreate();
+    }
     Contact *contact = [fetchedResultsController objectAtIndexPath:indexPath];
+    ABRecordRef person = ABAddressBookGetPersonWithRecordID(addressBook, [contact.recordID intValue]);
+    if (person != NULL && ABPersonHasImageData(person)) {
+        NSData *data = (NSData *)ABPersonCopyImageData(person);
+        UIImage *image = [[UIImage alloc] initWithData:data];
+        cell.imageView.image = image;
+        [image release];
+        [data release];
+    }
+    cell.editingAccessoryType = UITableViewCellAccessoryDetailDisclosureButton;
     cell.textLabel.text = contact.name;
-    cell.detailTextLabel.text = [[contact.phones anyObject] valueForKey:@"phone"];
 }
 
 
@@ -129,40 +131,55 @@
 }
 
 
-//- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
-//    
-//    if (editingStyle == UITableViewCellEditingStyleDelete) {
-//        
-//        // Delete the managed object.
-//        NSManagedObject *objectToDelete = [fetchedResultsController objectAtIndexPath:indexPath];
-//        if (detailViewController.detailItem == objectToDelete) {
-//            detailViewController.detailItem = nil;
-//        }
-//        
-//        NSManagedObjectContext *context = [fetchedResultsController managedObjectContext];
-//        [context deleteObject:objectToDelete];
-//        
-//        NSError *error;
-//        if (![context save:&error]) {
-//            /*
-//             Replace this implementation with code to handle the error appropriately.
-//             
-//             abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. If it is not possible to recover from the error, display an alert panel that instructs the user to quit the application by pressing the Home button.
-//             */
-//            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-//            abort();
-//        }
-//    }   
-//}
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+        
+        // Delete the managed object.
+        NSManagedObject *objectToDelete = [fetchedResultsController objectAtIndexPath:indexPath];
+        
+        NSManagedObjectContext *context = [fetchedResultsController managedObjectContext];
+        [context deleteObject:objectToDelete];
+        
+        NSError *error;
+        if (![context save:&error]) {
+            /*
+             Replace this implementation with code to handle the error appropriately.
+             
+             abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. If it is not possible to recover from the error, display an alert panel that instructs the user to quit the application by pressing the Home button.
+             */
+            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            abort();
+        }
+    }   
+}
 
 
 #pragma mark -
 #pragma mark Table view delegate
 
 - (void)tableView:(UITableView *)aTableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-       
+    
+    Contact *contact = [self.fetchedResultsController objectAtIndexPath:indexPath];
+    mapViewController.contact = contact;
 }
 
+
+- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath {
+    if (self.editing) {
+        WAYEditContactViewController *controller = [[WAYEditContactViewController alloc] initWithStyle:UITableViewStyleGrouped];
+        controller.contact = [self.fetchedResultsController objectAtIndexPath:indexPath];
+        UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:@"Close" style:UIBarButtonItemStyleBordered 
+                                                                        target:self action:@selector(_stopEditingContact)];
+        controller.navigationItem.leftBarButtonItem = cancelButton;
+        [cancelButton release];
+        UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:controller];
+        navController.modalPresentationStyle = UIModalPresentationFormSheet;
+        [self presentModalViewController:navController animated:YES];
+        [controller release];
+        [navController release];
+    }
+}
 
 #pragma mark -
 #pragma mark Fetched results controller
@@ -301,9 +318,9 @@
         }
         NSArray *mobilePhones = CollectMobilePhones(person);
         NSMutableSet *phones = [[NSMutableSet alloc] init];
-        for (NSString *phone in mobilePhones) {
-            NSManagedObject *mobilePhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:managedObjectContext];
-            [mobilePhone setValue:phone forKey:@"phone"];
+        for (NSNumber *phone in mobilePhones) {
+            Phone *mobilePhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:managedObjectContext];
+            mobilePhone.phone = phone;
             [phones addObject:mobilePhone];
         }
         Contact *contact = [NSEntityDescription insertNewObjectForEntityForName:@"Contact" inManagedObjectContext:managedObjectContext];
@@ -321,12 +338,12 @@
         [controller release];   
     }
     else {
+        // Use existing
         WAYEditContactViewController *controller = [[WAYEditContactViewController alloc] initWithStyle:UITableViewStyleGrouped];
         controller.contact = [contacts lastObject];
         [aPeoplePicker pushViewController:controller animated:YES];
         [controller release];
     }
-
     
     return NO;
 }
@@ -352,14 +369,9 @@
     [self dismissModalViewControllerAnimated:YES];
 }
 
-#pragma mark -
-#pragma mark Memory management
 
-- (void)didReceiveMemoryWarning {
-    // Releases the view if it doesn't have a superview.
-    [super didReceiveMemoryWarning];
-    
-    // Relinquish ownership any cached data, images, etc. that aren't in use.
+- (void)_stopEditingContact {
+    [self dismissModalViewControllerAnimated:YES];
 }
 
 @end

@@ -1,6 +1,9 @@
 #import "WAYDetailContactViewController.h"
 #import "WAYEditableTableViewCell.h"
+#import "AddressBookAdditions.h"
 #import "Contact.h"
+#import "Phone.h"
+
 
 /*!
  * @enum Sections
@@ -25,7 +28,7 @@ static NSString * const WAYDetailContactTextKey = @"WAYDetailContactTextKey";
  */
 static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsCheckingKey";
 
-@interface WAYDetailContactViewController ()
+@interface WAYDetailContactViewController (/* Private stuff here */)
 
 /*!
  * @property _editingRowIndexPath
@@ -43,12 +46,15 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
  */
 @property (nonatomic, assign) UITextField *_editingTextField;
 
+@property (nonatomic, retain) NSCharacterSet *_nonDecimalDigits;
 /*!
  * @method _stopEditingTextField
  * @abstract Stops editing cell at index path _editingRowIndexPath.
  * @discussion Resigns first responder, switches contentView.userInteractionEnabled to NO and nullyfies _editingRowIndexPath and _editingTextField.
  */
 - (void)_stopEditingTextField;
+
+- (void)_textFieldValueChanged:(UITextField *)sender;
 
 @end
 
@@ -59,6 +65,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
 @synthesize _editingRowIndexPath;
 @synthesize _currentIndexPath;
 @synthesize _editingTextField;
+@synthesize _nonDecimalDigits;
 
 #pragma mark -
 #pragma mark Initialization
@@ -67,6 +74,9 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     [contact release];
     [phoneFormatter release];
     [_editingRowIndexPath release];
+    [_currentIndexPath release];
+    [_contactMobilePhones release];
+    [_nonDecimalDigits release];
     [super dealloc];
 }
 
@@ -76,7 +86,6 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-
     self.tableView.allowsSelectionDuringEditing = YES;
 }
 
@@ -91,6 +100,12 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     [contact removeObserver:self forKeyPath:@"phones"];
+}
+
+
+- (void)viewDidUnload {
+    [super viewDidUnload];
+    self._nonDecimalDigits = nil;
 }
 
 
@@ -113,8 +128,8 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     else {
         [self.tableView reloadData];
     }
-
 }
+
 
 #pragma mark -
 #pragma mark Data managment
@@ -132,13 +147,13 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
     NSKeyValueChange changeType = [[change objectForKey:NSKeyValueChangeKindKey] integerValue];
-    if ([keyPath isEqualToString:@"phones"]) {
+    if ([keyPath isEqualToString:@"phones"]) { // Contact
         if (changeType == NSKeyValueChangeRemoval)
         {
             // Collect indexes of removed objects in _contactMobilePhones.
             NSArray *removedObjects = [change objectForKey:NSKeyValueChangeOldKey];
             NSMutableIndexSet *indexSet = [[NSMutableIndexSet alloc] init];
-            for (NSManagedObject *phone in removedObjects) {
+            for (Phone *phone in removedObjects) {
                 [indexSet addIndex:[_contactMobilePhones indexOfObjectIdenticalTo:phone]];
             }
             
@@ -153,7 +168,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
             NSArray *insertedObjects = [[change objectForKey:NSKeyValueChangeNewKey] allObjects];
             NSMutableIndexSet *indexSet = [[NSMutableIndexSet alloc] init];
             NSUInteger index = [_contactMobilePhones count];
-            for (NSManagedObject *phone in insertedObjects) {
+            for (Phone *phone in insertedObjects) {
                 [indexSet addIndex:index++];
             }
             
@@ -174,6 +189,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     
     // Create index paths from indexes in order to delete them from the table.
     [_contactMobilePhones insertObjects:phones atIndexes:indexSet];
+
     NSMutableArray *indexPaths = [[NSMutableArray alloc] initWithCapacity:count];
     NSUInteger i;
     for (i=0; i<count; ++i) {
@@ -194,6 +210,8 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     NSUInteger *indexes = calloc(count, sizeof(NSUInteger));
     [indexSet getIndexes:indexes maxCount:count inIndexRange:nil];
     
+    [_contactMobilePhones removeObjectsAtIndexes:indexSet];
+    
     // Update _currentIndexPath if needed.
     if (_currentIndexPath != nil && [_currentIndexPath section] == kPhonesSectionIndex) {
         NSUInteger i, currentRow, countOfUpperRows;
@@ -211,9 +229,6 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
             self._currentIndexPath = [NSIndexPath indexPathForRow:(currentRow - countOfUpperRows) inSection:kPhonesSectionIndex];
         }
     }
-    
-    // Remove objects at indexes.
-    [_contactMobilePhones removeObjectsAtIndexes:indexSet];
     
     // Create index paths from indexes in order to delete them from the table.
     NSMutableArray *indexPaths = [[NSMutableArray alloc] initWithCapacity:count];
@@ -251,6 +266,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
                 return [_contactMobilePhones count];
             }
         default:
+            NSAssert(NO, @"You've added new section, but forget add hook here");
             return 0;
     }
 }
@@ -263,22 +279,25 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         case kPhonesSectionIndex:
             return @"Phone numbers";
         default:
-            return @"";
+            NSAssert(NO, @"You've added new section, but forget add hook here");
+            return nil;
     }
 }
 
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     switch (section) {
+        case kTwitterSectionIndex:
+            return nil;
         case kPhonesSectionIndex:
             return @"Including country code\nAt least one number";
         default:
+            NSAssert(NO, @"You've added new section, but forget add hook here");
             return nil;
     }
 }
  
 
-// Customize the appearance of table view cells.
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
     static NSString *AddCellIdentifier = @"AddCell";
@@ -291,6 +310,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         if (cell == nil) {
             cell = [[[WAYEditableTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:WAYEditableCellIdentifier] autorelease];
             cell.textField.delegate = self;
+            [cell.textField addTarget:self action:@selector(_textFieldValueChanged:) forControlEvents:UIControlEventEditingChanged];
             cell.textField.returnKeyType = UIReturnKeyDone;
             cell.textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
             cell.textField.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -308,11 +328,8 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
             // Use Number pad for phone number cells
             cell.textField.keyboardType = UIKeyboardTypePhonePad;
             cell.textField.placeholder = @"Phone";
-            NSString *text = [[_contactMobilePhones objectAtIndex:row] valueForKey:@"phone"];
-            if ([text isKindOfClass:[NSNull class]]) {
-                text = @"";
-            }
-            cell.textField.text = text;
+            
+            cell.textField.text = [self.phoneFormatter stringFromPhoneNumber:[[_contactMobilePhones objectAtIndex:row] valueForKey:@"phone"]];
         }
         
         return cell;
@@ -343,7 +360,6 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     NSAssert([indexPath section] == kPhonesSectionIndex, @"User can edit only phone numbers section");
     
     self._currentIndexPath = indexPath;
-    [self.tableView beginUpdates];
     if (_editingRowIndexPath != nil) {
         [self _stopEditingTextField];
     }
@@ -354,16 +370,13 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         if (_currentIndexPath != nil) {
             [contact removePhonesObject:[_contactMobilePhones objectAtIndex:[_currentIndexPath row]]];
         }
-        [self.tableView endUpdates];
     }   
     else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        NSManagedObject *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
-        [newPhone setValue:contact forKey:@"contact"];
+        Phone *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
         [contact addPhonesObject:newPhone];
-        [self.tableView endUpdates];
         WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[tableView cellForRowAtIndexPath:_currentIndexPath];
         [cell.textField becomeFirstResponder];
-    } 
+    }
     self._currentIndexPath = nil;
 }
 
@@ -394,8 +407,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    NSManagedObject *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
-    [newPhone setValue:contact forKey:@"contact"];
+    Phone *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
     [contact addPhonesObject:newPhone];
     [self.tableView endUpdates];
     WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[tableView cellForRowAtIndexPath:_currentIndexPath];
@@ -416,7 +428,23 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
 
 
 #pragma mark -
-#pragma mark Text editing
+#pragma mark Text Input
+
+- (PhoneNumberFormatter *)phoneFormatter {
+    if (phoneFormatter == nil) {
+        phoneFormatter = [[PhoneNumberFormatter alloc] init];
+    }
+    return phoneFormatter;
+}
+
+
+- (NSCharacterSet *)_nonDecimalDigits {
+    if (_nonDecimalDigits == nil) {
+        self._nonDecimalDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+    }
+    return _nonDecimalDigits;
+}
+
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
 
@@ -431,9 +459,15 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         [self _stopEditingTextField];
     }
     
-    CGPoint point = [self.tableView convertPoint:textField.frame.origin fromView:textField];
+    CGPoint point = [self.tableView convertPoint:textField.frame.origin fromView:textField.superview];
     self._editingRowIndexPath = [self.tableView indexPathForRowAtPoint:point];
     self._editingTextField = textField;
+    
+    // Remove formatting from string
+    if ([_editingRowIndexPath section] == kPhonesSectionIndex) {
+        Phone *phone = [_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]];
+        textField.text = [phone.phone stringValue];
+    }
 }
 
 
@@ -441,8 +475,16 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     
     NSAssert(_editingRowIndexPath != nil, @"_editingRowIndexPath must not be nil");
     
-    if ([_editingRowIndexPath section] == kPhonesSectionIndex && ![textField.text length]) {
-        [contact removePhonesObject:[_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]]];
+    if ([_editingRowIndexPath section] == kPhonesSectionIndex) {
+        if (![textField.text length]) {
+            // Remove phone if it has no value
+            [contact removePhonesObject:[_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]]];
+        }
+        else {
+            // Format textfield
+            Phone *phone = [_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]];
+            textField.text = [phoneFormatter stringFromPhoneNumber:phone.phone];
+        }
     }
     
     self._editingTextField = nil;
@@ -450,33 +492,46 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
 }
 
 
-- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
-    
-    NSAssert(textField == _editingTextField, @"You are changing textfield, that isn't marked as _editingTextField");
-    
-    NSString *text = [textField.text stringByReplacingCharactersInRange:range withString:string];
-    [self setText:text forRowAtIndexPath:_editingRowIndexPath];
-    return YES;
-}
-
-
-- (BOOL)textFieldShouldBeginEditing:(UITextField *)textFiel {
+- (BOOL)textFieldShouldBeginEditing:(UITextField *)textField {
     // User can edit rows only in editing mode.
     return [self isEditing];
 }
 
 
-- (void)setText:(NSString *)text forRowAtIndexPath:(NSIndexPath *)indexPath {
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
     
-    switch ([indexPath section]) {
-        case kTwitterSectionIndex:
-            contact.twitter = text;
-            break;
-        case kPhonesSectionIndex:
-            [[_contactMobilePhones objectAtIndex:[indexPath row]] setValue:text forKey:@"phone"];
-            break;
+    NSParameterAssert(textField == _editingTextField);
+    
+    NSString *inputString = [textField.text stringByReplacingCharactersInRange:range withString:string];
+    
+    if ([_editingRowIndexPath section] == kPhonesSectionIndex && (
+                                                                  [string rangeOfCharacterFromSet:self._nonDecimalDigits].location != NSNotFound  || 
+                                                                  range.location == 0 && [string hasPrefix:@"0"] ||
+                                                                  [inputString length] >= 20
+                                                                  ))
+    {
+        return NO;
+    }
+    else {
+        return YES;
     }
 }
+
+
+- (void)_textFieldValueChanged:(UITextField *)sender {
+    
+    if ([sender isEditing]) {
+        NSParameterAssert(sender == _editingTextField);
+        if ([_editingRowIndexPath section] == kPhonesSectionIndex) {
+            Phone *phone = [_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]];
+            phone.phone = [NSNumber numberWithLongLongFromString:sender.text];
+        }
+        else if ([_editingRowIndexPath section] == kTwitterSectionIndex) {
+            contact.twitter = sender.text;
+        }
+    }
+}
+
 
 #pragma mark -
 #pragma mark Private

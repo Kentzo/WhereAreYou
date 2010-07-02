@@ -1,5 +1,7 @@
 
 
+@class Phone;
+
 @interface Contact :  NSManagedObject  
 {
 }
@@ -13,8 +15,8 @@
 
 
 @interface Contact (CoreDataGeneratedAccessors)
-- (void)addPhonesObject:(NSManagedObject *)value;
-- (void)removePhonesObject:(NSManagedObject *)value;
+- (void)addPhonesObject:(Phone *)value;
+- (void)removePhonesObject:(Phone *)value;
 - (void)addPhones:(NSSet *)value;
 - (void)removePhones:(NSSet *)value;
 

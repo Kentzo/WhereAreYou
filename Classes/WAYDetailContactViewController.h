@@ -4,18 +4,19 @@
 
 @interface WAYDetailContactViewController : UITableViewController <UITextFieldDelegate> {
     Contact *contact;
-	NSNumberFormatter *phoneFormatter;
+	PhoneNumberFormatter *phoneFormatter;
 @private
     NSIndexPath *_editingRowIndexPath;
     NSIndexPath *_currentIndexPath;
     UITextField *_editingTextField;
     NSMutableArray *_contactMobilePhones;
+    NSCharacterSet *_nonDecimalDigits;
 }
 
+// Must be set before view appears and must be not changed before view disappears
 @property (nonatomic, retain) Contact *contact;
-@property (nonatomic, retain) NSNumberFormatter *phoneFormatter;
+@property (nonatomic, retain) PhoneNumberFormatter *phoneFormatter;
 
-- (void)setText:(NSString *)text forRowAtIndexPath:(NSIndexPath *)indexPath;
 - (void)insertPhones:(NSArray *)phones atIndexes:(NSIndexSet *)indexSet;
 - (void)removePhonesAtIndexes:(NSIndexSet *)indexSet;
 

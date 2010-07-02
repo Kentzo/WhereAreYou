@@ -1,4 +1,5 @@
 #import "Contact.h"
+#import "Phone.h"
 
 
 @implementation Contact 

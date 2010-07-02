@@ -4,6 +4,7 @@
 NSMutableArray* CollectMobilePhones(ABRecordRef person) {
     
     assert(person != NULL);
+    
     NSMutableArray *mobilePhones = [NSMutableArray array];
     
     // Extract all objects for kABPersonPhoneProperty property
@@ -15,7 +16,11 @@ NSMutableArray* CollectMobilePhones(ABRecordRef person) {
         // If label equals to kABPersonPhoneMobileLabel then add it to mobilePhones array
         if (CFStringCompare(label, kABPersonPhoneMobileLabel, 0) == kCFCompareEqualTo) {
             CFStringRef mobilePhone = ABMultiValueCopyValueAtIndex(phones, index);
-            [mobilePhones addObject:(NSString *)mobilePhone];
+            // Extract NSNumber with long long
+            NSNumber *number = [NSNumber numberWithLongLongFromString:(NSString *)mobilePhone];
+            if (number != nil) {
+                [mobilePhones addObject:number];
+            }
             CFRelease(mobilePhone);
         }
         CFRelease(label);
@@ -28,6 +33,7 @@ NSMutableArray* CollectMobilePhones(ABRecordRef person) {
 NSMutableArray* CollectUrlsThatContainString(ABRecordRef person, CFStringRef string) {
     
     assert(person != NULL);
+    
     NSMutableArray *filtredUrls = [NSMutableArray array];
     
     // Extract all objects for kABPersonURLProperty property
@@ -46,3 +52,4 @@ NSMutableArray* CollectUrlsThatContainString(ABRecordRef person, CFStringRef str
     
     return filtredUrls;
 }
+

@@ -1,16 +1,7 @@
-//
-//  WhereAreYouAppDelegate.m
-//  WhereAreYou
-//
-//  Created by Илья Кулаков on 19.06.10.
-//  Copyright __MyCompanyName__ 2010. All rights reserved.
-//
-
 #import "WhereAreYouAppDelegate.h"
-
-
 #import "RootViewController.h"
-#import "DetailViewController.h"
+#import "WAYMapViewController.h"
+#import "WAYDataSyncer.h"
 
 
 @interface WhereAreYouAppDelegate (CoreDataPrivate)
@@ -18,6 +9,7 @@
 @property (nonatomic, retain, readonly) NSManagedObjectContext *managedObjectContext;
 @property (nonatomic, retain, readonly) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 - (NSString *)applicationDocumentsDirectory;
+- (void)updateContext:(NSNotification *)notification;
 @end
 
 
@@ -33,7 +25,22 @@
     
     // Override point for customization after app launch    
     rootViewController.managedObjectContext = self.managedObjectContext;
+    detailViewController.managedObjectContext = self.managedObjectContext;
+    
+    // Setup data syncer
+    WAYDataSyncer *dataSyncer = [WAYDataSyncer sharedInstance];
+    NSManagedObjectContext *updatesContext = [NSManagedObjectContext new];
+    [updatesContext setPersistentStoreCoordinator:self.persistentStoreCoordinator];
+    dataSyncer.context = updatesContext;
+    [updatesContext release];
+    dataSyncer.applId = [NSNumber numberWithInt:2535];
+    dataSyncer.applKey = @"e0a01e816284122c0723d64a";
 
+    // Add observer for NSManagedObjectContextDidSaveNotification to update our context
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(updateContext:) 
+                                                 name:NSManagedObjectContextDidSaveNotification 
+                                               object:nil];
     
 	// Add the split view controller's view to the window and display.
 	[window addSubview:splitViewController.view];
@@ -48,12 +55,17 @@
  */
 - (void)applicationWillTerminate:(UIApplication *)application {
 	
+    // Remove observer for NSManagedObjectContextDidSaveNotification
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:NSManagedObjectContextDidSaveNotification
+                                                  object:nil];   
     NSError *error = nil;
     if (managedObjectContext != nil) {
         if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
             
         } 
     }
+    [[WAYDataSyncer sharedInstance] cancellAllOperations:YES];
 }
 
 
@@ -123,6 +135,16 @@
     }    
 	
     return persistentStoreCoordinator;
+}
+
+
+- (void)updateContext:(NSNotification *)notification {
+    NSManagedObjectContext *changedMOC = [notification object];
+    if (managedObjectContext != changedMOC) {
+        [managedObjectContext performSelectorOnMainThread:@selector(mergeChangesFromContextDidSaveNotification:)
+                                               withObject:notification 
+                                            waitUntilDone:YES];
+    }
 }
 
 

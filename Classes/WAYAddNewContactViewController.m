@@ -2,9 +2,10 @@
 #import "Contact.h"
 
 
-@interface WAYDetailContactViewController ()
+@interface WAYDetailContactViewController (/* Private stuff here */)
 
 - (void)_done:(id)sender;
+- (void)_managedObjectContextDidChanged:(NSNotification *)notification;
 
 @end
 
@@ -26,6 +27,10 @@
     [super viewWillAppear:animated];
     self.navigationItem.rightBarButtonItem.enabled = [contact validateForUpdate:nil];
     _isDone = NO;
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(_managedObjectContextDidChanged:) 
+                                                 name:NSManagedObjectContextObjectsDidChangeNotification 
+                                               object:contact.managedObjectContext];
 }
 
 
@@ -35,24 +40,9 @@
         // Delete just created contact when view disappears 
         [contact.managedObjectContext deleteObject:contact];
     }
-}
-
-
-- (void)insertPhones:(NSArray *)phones atIndexes:(NSIndexSet *)indexSet {
-    [super insertPhones:phones atIndexes:indexSet];
-    self.navigationItem.rightBarButtonItem.enabled = [contact validateForUpdate:nil];
-}
-
-
-- (void)removePhonesAtIndexes:(NSIndexSet *)indexSet {
-    [super removePhonesAtIndexes:indexSet];
-    self.navigationItem.rightBarButtonItem.enabled = [contact validateForUpdate:nil];
-}
-
-
-- (void)setText:(NSString *)text forRowAtIndexPath:(NSIndexPath *)indexPath {
-    [super setText:text forRowAtIndexPath:indexPath];
-    self.navigationItem.rightBarButtonItem.enabled = [contact validateForUpdate:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self 
+                                                    name:NSManagedObjectContextObjectsDidChangeNotification 
+                                                  object:contact.managedObjectContext];
 }
 
 
@@ -65,6 +55,11 @@
         _isDone = YES;
     }    
     [delegate addNewContactViewControllerDidDone:self];
+}
+
+
+- (void)_managedObjectContextDidChanged:(NSNotification *)notification {
+    self.navigationItem.rightBarButtonItem.enabled = [contact validateForUpdate:nil];
 }
 
 @end

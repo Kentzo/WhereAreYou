@@ -1,11 +1,12 @@
 #import "WAYAddNewContactViewController.h"
+#import "WAYEditContactViewController.h"
 
 
-@class DetailViewController;
+@class WAYMapViewController;
 
 @interface RootViewController : UITableViewController <NSFetchedResultsControllerDelegate, ABPeoplePickerNavigationControllerDelegate, WAYAddNewContactViewControllerDelegate> {
     
-    DetailViewController *detailViewController;
+    WAYMapViewController *mapViewController;
     
     NSFetchedResultsController *fetchedResultsController;
     NSManagedObjectContext *managedObjectContext;
@@ -13,7 +14,7 @@
     ABPeoplePickerNavigationController *peoplePicker;
 }
 
-@property (nonatomic, retain) IBOutlet DetailViewController *detailViewController;
+@property (nonatomic, retain) IBOutlet WAYMapViewController *mapViewController;
 @property (nonatomic, retain) ABPeoplePickerNavigationController *peoplePicker;
 
 @property (nonatomic, retain) NSFetchedResultsController *fetchedResultsController;

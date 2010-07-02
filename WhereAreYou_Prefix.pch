@@ -15,4 +15,7 @@
     #import <AddressBookUI/AddressBookUI.h>
     #import <CoreData/CoreData.h>
     #import <MapKit/MapKit.h>
+    #import "TouchXML.h"
+    #import "NSNumber+LongLongFromString.h"
+    #import "PhoneNumberFormatter.h"
 #endif
