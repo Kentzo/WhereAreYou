@@ -16,7 +16,6 @@
 - (void)syncAllLocations;
 - (void)syncAllLocationsForContact:(NSManagedObjectID *)contactId;
 - (void)syncLocationForPhone:(NSManagedObjectID *)phoneId;
-
 - (void)cancellAllOperations:(BOOL)waitUntilDone;
 
 @end
@@ -26,3 +25,8 @@
 + (WAYDataSyncer *)sharedInstance;
 
 @end
+
+extern NSString* const WAYRetrivePhoneLocationErrorNotification;
+extern NSString* const WAYErrorKey;
+extern NSString* const WAYReasonKey;
+extern NSString* const WAYPhoneKey;

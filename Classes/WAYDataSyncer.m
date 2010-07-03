@@ -4,10 +4,15 @@
 #import "Phone.h"
 
 
-static const int defaultRequestedAccuracy = 10;     // 10 m
-static const int defaultAcceptableAccuract = 1000000;  // 1000 km
-static const long long defaultMaximumAge = 3600000L;// 1 hour
-static const long long defaultResponseTime = 30000L;// 30 seconds
+NSString* const WAYRetrivePhoneLocationErrorNotification = @"com.kulakov.way.retrivephonelocationerrornotification";
+NSString* const WAYErrorKey = @"com.kulakov.way.errorkey";
+NSString* const WAYReasonKey = @"com.kulakov.way.reason";
+NSString* const WAYPhoneKey = @"com.kulakov.way.phone";
+
+static const int defaultRequestedAccuracy = 10;         // 10 m
+static const int defaultAcceptableAccuract = 1000000;   // 1000 km
+static const long long defaultMaximumAge = 3600000L;    // 1 hour
+static const long long defaultResponseTime = 30000L;    // 30 seconds
 
 @interface WAYDataSyncer (/* Private suff here */)
 
@@ -143,7 +148,7 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
         NSFetchRequest *request = [[NSFetchRequest alloc] init];
         [request setEntity:[NSEntityDescription entityForName:@"Phone" inManagedObjectContext:context]];
         NSArray *results = [context executeFetchRequest:request error:nil];
-         [request release];
+        [request release];
         for (Phone *phone in results) {
             OASGetLocationOperation *getLocation = [[OASGetLocationOperation alloc] initWithApplId:applId 
                                                                                            applKey:applKey
@@ -226,12 +231,9 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
     
     NSManagedObjectContext *changedMOC = [notification object];
     if (changedMOC != context) {
-    NSAssert (context != nil, @"You've forgotten to set context");
+        NSAssert (context != nil, @"You've forgotten to set context");
         @synchronized (context) {
             [context mergeChangesFromContextDidSaveNotification:notification];
-//        [context performSelectorOnMainThread:@selector(mergeChangesFromContextDidSaveNotification:)
-//                                  withObject:notification 
-//                               waitUntilDone:NO];
         }
     }
 }
@@ -251,28 +253,28 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
     
     if ([operation isKindOfClass:[OASGetLocationOperation class]]) {
         /*      
-                Example of Success Response
-        <ns:getLocationResponse xmlns:ns="http://service.las.alu.com/xsd"> 
-            <ns:return>SU100</ns:return>
-            <ns:reason>Success</ns:reason>
-            <ns:requestId>R82962</ns:requestId>                 <--- Optional
-            <ns:phoneNumber>19175550001</ns:phoneNumber>
-            <ns:location> 
-                <ns:latitude>41.0355</ns:latitude> 
-                <ns:longitude>-82.2419</ns:longitude> 
-                <ns:altitude>0.0</ns:altitude> 
-                <ns:accuracy>150</ns:accuracy> 
-                <ns:timestamp>1242399982540</ns:timestamp>
-            </ns:location> 
+         Example of Success Response
+         <ns:getLocationResponse xmlns:ns="http://service.las.alu.com/xsd"> 
+         <ns:return>SU100</ns:return>
+         <ns:reason>Success</ns:reason>
+         <ns:requestId>R82962</ns:requestId>                 <--- Optional
+         <ns:phoneNumber>19175550001</ns:phoneNumber>
+         <ns:location> 
+         <ns:latitude>41.0355</ns:latitude> 
+         <ns:longitude>-82.2419</ns:longitude> 
+         <ns:altitude>0.0</ns:altitude> 
+         <ns:accuracy>150</ns:accuracy> 
+         <ns:timestamp>1242399982540</ns:timestamp>
+         </ns:location> 
          </ns:getLocationResponse>
          
-                Example of Failure Response
-        <ns:getLocationResponse xmlns:ns="http://service.las.alu.com/xsd"> 
-            <ns:return>RE402</ns:return> 
-            <ns:reason>Wrong key for application 1</ns:reason> 
-            <ns:requestId>R82962</ns:requestId>                 <--- Optional
-            <ns:phoneNumber>19175550001</ns:phoneNumber>
-        </ns:getLocationResponse>
+         Example of Failure Response
+         <ns:getLocationResponse xmlns:ns="http://service.las.alu.com/xsd"> 
+         <ns:return>RE402</ns:return> 
+         <ns:reason>Wrong key for application 1</ns:reason> 
+         <ns:requestId>R82962</ns:requestId>                 <--- Optional
+         <ns:phoneNumber>19175550001</ns:phoneNumber>
+         </ns:getLocationResponse>
          */
         NSInteger statusCode = [response statusCode];
         if (statusCode >= 200 && statusCode < 400) {
@@ -280,12 +282,12 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
             CXMLDocument *xmlDocument = [[CXMLDocument alloc] initWithData:aBody options:0 error:NULL];
             NSDictionary *bodyDictionary = CXMLNodeToNSDictionary([xmlDocument rootElement]);
             [xmlDocument release];
-
+            
             NSString *returnCode = [bodyDictionary objectForKey:@"return"];
             NSAssert (returnCode != nil, @"OAS responses always have return code");
+            long long phoneNumber = strtoll([[bodyDictionary objectForKey:@"phoneNumber"] UTF8String], NULL, 10);
             if ([returnCode hasPrefix:@"SU"]) { // TODO: add normal return code checking
                 // Get location attributes
-                long long phoneNumber = strtoll([[bodyDictionary objectForKey:@"phoneNumber"] UTF8String], NULL, 10);
                 NSDictionary *location = [bodyDictionary objectForKey:@"location"];
                 float latitude = strtof([[location objectForKey:@"latitude"] UTF8String], NULL);
                 float longitude = strtof([[location objectForKey:@"longitude"] UTF8String], NULL);
@@ -308,13 +310,32 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
                         phone.accuracy = [NSNumber numberWithInt:accuracy];
                         phone.timestamp = [NSNumber numberWithLongLong:timestamp];
                     }
-                    [context save:nil];
+                    NSError *error = nil;
+                    if (![context save:&error]) {
+                        NSLog(@"Failed to save to data store: %@", [error localizedDescription]);
+                        NSArray* detailedErrors = [[error userInfo] objectForKey:NSDetailedErrorsKey];
+                        if(detailedErrors != nil && [detailedErrors count] > 0) {
+                            for(NSError* detailedError in detailedErrors) {
+                                NSLog(@"  DetailedError: %@", [detailedError userInfo]);
+                            }
+                        }
+                        else {
+                            NSLog(@"  %@", [error userInfo]);
+                        }
+                    }
                 }
             }
             else {
                 NSLog(@"error: %@\nreason: %@", [bodyDictionary objectForKey:@"return"], [bodyDictionary objectForKey:@"reason"]);
+                NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[bodyDictionary objectForKey:@"return"], WAYErrorKey,
+                                          [bodyDictionary objectForKey:@"reason"], WAYReasonKey, 
+                                          [NSNumber numberWithLongLong:phoneNumber], WAYPhoneKey, nil];
+                [[NSNotificationCenter defaultCenter] postNotificationName:WAYRetrivePhoneLocationErrorNotification
+                                                                    object:self
+                                                                  userInfo:userInfo];
+                [userInfo release];
             }
-
+            
         }
     }
 }

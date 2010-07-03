@@ -1,28 +1,40 @@
 
 
-@class RootViewController, Phone, Contact;
+@class RootViewController, Phone, Contact, WAYErrorMessageControl;
 
 @interface WAYMapViewController : UIViewController <UIPopoverControllerDelegate, UISplitViewControllerDelegate, MKMapViewDelegate> {
     
-    UIPopoverController *popoverController;
+    UIPopoverController *contactsPopoverController;
+    UIPopoverController *errorsPopoverController;
     UIToolbar *toolbar;
     MKMapView *mapView;
+    WAYErrorMessageControl *errorMessage;
+    UIBarButtonItem *errorMessageBarButtonItem;
+    UIBarButtonItem *updateContactItem;
     RootViewController *rootViewController;
+    
     NSManagedObjectContext *managedObjectContext;
     Contact *contact;
-    UIBarButtonItem *updateContactItem;
+    NSMutableArray *errors;
 }
 
-@property (nonatomic, retain) UIPopoverController *popoverController;
+@property (nonatomic, retain) UIPopoverController *contactsPopoverController;
+@property (nonatomic, retain) UIPopoverController *errorsPopoverController;
 @property (nonatomic, retain) IBOutlet UIToolbar *toolbar;
 @property (nonatomic, retain) IBOutlet MKMapView *mapView;
+@property (nonatomic, retain) IBOutlet WAYErrorMessageControl *errorMessage;
+@property (nonatomic, retain) IBOutlet UIBarButtonItem *errorMessageBarButtonItem;
 @property (nonatomic, retain) IBOutlet UIBarButtonItem *updateContactItem;
 @property (nonatomic, assign) IBOutlet RootViewController *rootViewController;
 @property (nonatomic, retain) NSManagedObjectContext *managedObjectContext;
 @property (nonatomic, retain) Contact *contact;
+@property (nonatomic, readonly) NSArray *errors;
 
 - (IBAction)insertNewObject:(id)sender;
 - (IBAction)changeMapViewType:(UISegmentedControl *)sender;
 - (IBAction)updateContact:(id)sender;
+- (IBAction)showErrorList:(id)sender;
+
+- (void)centerAnnotaions;
 
 @end

@@ -78,6 +78,8 @@
 #pragma mark Add a new object
 
 - (void)insertNewObject:(id)sender {
+    [self.tableView deselectRowAtIndexPath:[self.tableView indexPathForSelectedRow] animated:YES];
+    mapViewController.contact = nil;
     [self presentModalViewController:self.peoplePicker animated:YES];
 }
 
@@ -100,6 +102,7 @@
         [data release];
     }
     cell.editingAccessoryType = UITableViewCellAccessoryDetailDisclosureButton;
+    cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
     cell.textLabel.text = contact.name;
 }
 
@@ -143,13 +146,16 @@
         
         NSError *error;
         if (![context save:&error]) {
-            /*
-             Replace this implementation with code to handle the error appropriately.
-             
-             abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. If it is not possible to recover from the error, display an alert panel that instructs the user to quit the application by pressing the Home button.
-             */
-            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            abort();
+            NSLog(@"Failed to save to data store: %@", [error localizedDescription]);
+            NSArray* detailedErrors = [[error userInfo] objectForKey:NSDetailedErrorsKey];
+            if(detailedErrors != nil && [detailedErrors count] > 0) {
+                for(NSError* detailedError in detailedErrors) {
+                    NSLog(@"  DetailedError: %@", [detailedError userInfo]);
+                }
+            }
+            else {
+                NSLog(@"  %@", [error userInfo]);
+            }
         }
     }   
 }
@@ -179,6 +185,12 @@
         [controller release];
         [navController release];
     }
+    else {
+        [tableView selectRowAtIndexPath:indexPath animated:YES scrollPosition:UITableViewScrollPositionNone];
+        Contact *contact = [self.fetchedResultsController objectAtIndexPath:indexPath];
+        mapViewController.contact = contact;
+        [mapViewController centerAnnotaions];
+    }
 }
 
 #pragma mark -
@@ -195,6 +207,7 @@
      */
     // Create the fetch request for the entity.
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+    
     // Edit the entity name as appropriate.
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Contact" inManagedObjectContext:managedObjectContext];
     [fetchRequest setEntity:entity];

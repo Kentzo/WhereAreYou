@@ -49,7 +49,16 @@
 - (void)_done:(id)sender {
     NSError *error = nil;
     if (![contact.managedObjectContext save:&error]) {
-        NSLog(@"%@", error);
+        NSLog(@"Failed to save to data store: %@", [error localizedDescription]);
+        NSArray* detailedErrors = [[error userInfo] objectForKey:NSDetailedErrorsKey];
+        if(detailedErrors != nil && [detailedErrors count] > 0) {
+            for(NSError* detailedError in detailedErrors) {
+                NSLog(@"  DetailedError: %@", [detailedError userInfo]);
+            }
+        }
+        else {
+            NSLog(@"  %@", [error userInfo]);
+        }
     }
     else {
         _isDone = YES;

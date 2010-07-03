@@ -1,48 +1,81 @@
 #import "WAYMapViewController.h"
 #import "RootViewController.h"
+#import "WAYErrorListViewController.h"
+#import "WAYErrorMessageControl.h"
 #import "WAYDataSyncer.h"
 #import "Phone.h"
 #import "Contact.h"
 
 
-static const float updateInterval = 60.0f;
+static const float kSpanDelta = 1.15f;
 
 @interface WAYMapViewController (/* Private stuff here */)
 
 - (void)_updateAnnotationsFromNotification:(NSNotification *)notification;
 - (void)_managedObjectDidSave:(NSNotification *)notification;
 - (void)_placeAnnotations;
-- (void)_centerAnnotations;
+- (void)_handleOASError:(NSNotification *)notification;
+- (void)_updateErrorView;
 
 @end
 
 @implementation WAYMapViewController
-@synthesize popoverController;
+@synthesize contactsPopoverController;
+@synthesize errorsPopoverController;
 @synthesize toolbar;
 @synthesize mapView;
+@synthesize errorMessage;
+@synthesize errorMessageBarButtonItem;
 @synthesize updateContactItem;
-@synthesize managedObjectContext;
 @synthesize rootViewController;
+@synthesize managedObjectContext;
 @synthesize contact;
+@synthesize errors;
+
+- (NSUInteger)countOfErrors {
+    return [errors count];
+}
+
+
+- (NSDictionary *)objectInErrorsAtIndex:(NSUInteger)index {
+    return [errors objectAtIndex:index];
+}
+
+
+- (void)insertObject:(NSDictionary *)object inErrorsAtIndex:(NSUInteger)index {
+    [errors insertObject:object atIndex:index];
+}
+
+
+- (void)removeObjectFromErrorsAtIndex:(NSUInteger)index {
+    [errors removeObjectAtIndex:index];
+}
 
 
 - (void)dealloc {
 	
-    [popoverController release];
+    [contactsPopoverController release];
+    [errorsPopoverController release];
     [toolbar release];
     [mapView release];
+    [errorMessage release];
+    [errorMessageBarButtonItem release];
     [updateContactItem release];
     [managedObjectContext release];
     [contact release];
+    [errors release];
 	[super dealloc];
 }	
 
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    NSLog(@"keyPath");
+}
 
 #pragma mark -
 #pragma mark View lifecycle
 
 
- // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
 - (void)viewDidLoad {
     
     [super viewDidLoad];
@@ -50,16 +83,31 @@ static const float updateInterval = 60.0f;
                                              selector:@selector(_managedObjectDidSave:) 
                                                  name:NSManagedObjectContextDidSaveNotification 
                                                object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(_handleOASError:)
+                                                 name:WAYRetrivePhoneLocationErrorNotification
+                                               object:[WAYDataSyncer sharedInstance]];
+    [self addObserver:self forKeyPath:@"errors" options:NSKeyValueObservingOptionNew context:NULL];
     mapView.delegate = self;
+    errors = [NSMutableArray new];
 }
 
 
 - (void)viewDidUnload {
-	// Release any retained subviews of the main view.
-	self.popoverController = nil;
+    [super viewDidUnload];
+	self.contactsPopoverController = nil;
+    self.errorsPopoverController = nil;
     self.mapView = nil;
+    self.errorMessage = nil;
+    self.errorMessageBarButtonItem = nil;
+    self.updateContactItem = nil;
+    [errors release];
+    errors = nil;
+    mapView.delegate = nil;
+    [self removeObserver:self forKeyPath:@"errors"];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
+
 
 #pragma mark -
 #pragma mark UISplitViewControllerDelegate
@@ -71,7 +119,7 @@ static const float updateInterval = 60.0f;
     [items insertObject:barButtonItem atIndex:0];
     [toolbar setItems:items animated:YES];
     [items release];
-    self.popoverController = pc;
+    self.contactsPopoverController = pc;
 }
 
 
@@ -82,7 +130,13 @@ static const float updateInterval = 60.0f;
     [items removeObjectAtIndex:0];
     [toolbar setItems:items animated:YES];
     [items release];
-    self.popoverController = nil;
+    self.contactsPopoverController = nil;
+}
+
+
+- (void)splitViewController:(UISplitViewController*)svc popoverController:(UIPopoverController*)pc willPresentViewController:(UIViewController *)aViewController {
+    // Dismiss errors popover if is is presented
+    [errorsPopoverController dismissPopoverAnimated:YES];
 }
 
 
@@ -112,6 +166,30 @@ static const float updateInterval = 60.0f;
     if (contact != nil) {
         [[WAYDataSyncer sharedInstance] syncAllLocationsForContact:[contact objectID]];
     }
+}
+
+
+- (IBAction)showErrorList:(id)sender {
+    
+    if (self.errorsPopoverController == nil) {
+        WAYErrorListViewController *controller = [[WAYErrorListViewController alloc] initWithStyle:UITableViewStylePlain];
+        UIPopoverController *popover = [[UIPopoverController alloc] initWithContentViewController:controller];
+        [controller release];
+        self.errorsPopoverController = popover;
+        [popover release];
+    }
+    WAYErrorListViewController *controller = (WAYErrorListViewController *)errorsPopoverController.contentViewController;
+    controller.errors = errors;
+    // Calc popover height to display all errors
+    // If height is more than 600 points, reset it to 600 points
+    CGFloat height = controller.tableView.rowHeight * [errors count];
+    if (height > 600.0f) {
+        height = 600.0f;
+    }
+    errorsPopoverController.popoverContentSize = CGSizeMake(320.0, height);
+    // Dismiss contacts popover if it is presented
+    [contactsPopoverController dismissPopoverAnimated:YES];
+    [errorsPopoverController presentPopoverFromBarButtonItem:errorMessageBarButtonItem permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
 }
 
 
@@ -167,22 +245,74 @@ static const float updateInterval = 60.0f;
 
 - (void)setContact:(Contact *)newContact {
     
-    [newContact retain];
-    [contact release];
-    contact = newContact;
-    [mapView removeAnnotations:mapView.annotations];
-    
+    // Remove all errors and update errorMessage view
+    [errors removeAllObjects];
+    [self _updateErrorView];
     [[WAYDataSyncer sharedInstance] cancellAllOperations:NO];
     
+    if (contact != newContact) {
+        [newContact retain];
+        [contact release];
+        contact = newContact;
+        // If newContact differs from contact, remove all annotations
+        [mapView removeAnnotations:mapView.annotations];
+        if (newContact != nil) {
+            [self _placeAnnotations];
+        }
+    }
+    
     if (contact != nil) {
-        [self _placeAnnotations];
-        [self _centerAnnotations];
-        [[WAYDataSyncer sharedInstance] syncAllLocationsForContact:[contact objectID]];
         self.updateContactItem.enabled = YES;
-        
+        [[WAYDataSyncer sharedInstance] syncAllLocationsForContact:[contact objectID]];
     }
     else {
         self.updateContactItem.enabled = NO;
+    }
+}
+
+
+- (void)centerAnnotaions {
+    
+    NSArray *annotations = mapView.annotations;
+    if ([annotations count] == 1) {
+        // Center on annotation and zoom to street level
+        Phone *phone = [annotations lastObject];
+        MKCoordinateRegion region;
+        region.center.latitude = [phone.latitude floatValue];
+        region.center.longitude = [phone.longitude floatValue];
+        region.span.latitudeDelta = 0.0039;
+        region.span.longitudeDelta = 0.0034;
+        [mapView setRegion:region animated:YES];
+    }
+    else if ([mapView.annotations count] > 1) {
+        // Calc region to display all pins
+        Phone *anyPhone = [annotations lastObject];
+        float topLatitude = [anyPhone.latitude floatValue], leftLongitude = [anyPhone.longitude floatValue],
+        bottomLatitude = topLatitude, rightLongitude = leftLongitude;
+        for (Phone *phone in annotations) {
+            float phoneLatitude = [phone.latitude floatValue];
+            float phoneLongitude = [phone.longitude floatValue];
+            NSLog(@"latitude: %f\nlongitude: %f\n\n", phoneLatitude, phoneLongitude);
+            if (phoneLatitude < topLatitude) {
+                topLatitude = phoneLatitude;
+            }
+            else if (phoneLatitude > bottomLatitude) {
+                bottomLatitude = phoneLatitude;
+            }
+            
+            if (phoneLongitude < leftLongitude) {
+                leftLongitude = phoneLongitude;
+            }
+            else if (phoneLongitude > rightLongitude) {
+                rightLongitude = phoneLongitude;
+            }
+        }
+        MKCoordinateRegion region;
+        region.center.latitude = topLatitude + (bottomLatitude - topLatitude) / 2;
+        region.center.longitude = leftLongitude + (rightLongitude - leftLongitude) / 2;
+        region.span.latitudeDelta = (bottomLatitude - topLatitude) * kSpanDelta; // *kSpanDelta to make all pins visible
+        region.span.longitudeDelta = (rightLongitude - leftLongitude) * kSpanDelta;
+        [mapView setRegion:region animated:YES];
     }
 }
 
@@ -220,48 +350,33 @@ static const float updateInterval = 60.0f;
     [mapView addAnnotations:phonesToInsert];
 }
 
-- (void)_centerAnnotations {
-    NSArray *annotations = mapView.annotations;
-    if ([annotations count] == 1) {
-        // Center on annotation and zoom to street level
-        Phone *phone = [annotations lastObject];
-        MKCoordinateRegion region;
-        region.center.latitude = [phone.latitude floatValue];
-        region.center.longitude = [phone.longitude floatValue];
-        region.span.latitudeDelta = 0.0039;
-        region.span.longitudeDelta = 0.0034;
-        [mapView setRegion:region animated:YES];
+
+- (void)_handleOASError:(NSNotification *)notification {
+    if ([NSThread currentThread] != [NSThread mainThread]) {
+        [self performSelectorOnMainThread:@selector(_handleOASError:) withObject:notification waitUntilDone:NO];
     }
-    else if ([mapView.annotations count] > 1) {
-        // Calc region to display all pins
-        Phone *anyPhone = [annotations lastObject];
-        float topLatitude = [anyPhone.latitude floatValue], leftLongitude = [anyPhone.longitude floatValue],
-        bottomLatitude = topLatitude, rightLongitude = leftLongitude;
-        for (Phone *phone in annotations) {
-            float phoneLatitude = [phone.latitude floatValue];
-            float phoneLongitude = [phone.longitude floatValue];
-            NSLog(@"latitude: %f\nlongitude: %f\n\n", phoneLatitude, phoneLongitude);
-            if (phoneLatitude < topLatitude) {
-                topLatitude = phoneLatitude;
-            }
-            else if (phoneLatitude > bottomLatitude) {
-                bottomLatitude = phoneLatitude;
-            }
-            
-            if (phoneLongitude < leftLongitude) {
-                leftLongitude = phoneLongitude;
-            }
-            else if (phoneLongitude > rightLongitude) {
-                rightLongitude = phoneLongitude;
-            }
+    else {
+        NSDictionary *userInfo = [notification userInfo];
+        // Check that error was occured with phone that contact has.
+        if ([[contact valueForKeyPath:@"phones.phone"] containsObject:[userInfo objectForKey:WAYPhoneKey]]) {
+            NSAssert(errors != nil, @"You forget to initialize _errors array");
+            [errors addObject:userInfo];
+            [self _updateErrorView];
         }
-        MKCoordinateRegion region;
-        region.center.latitude = topLatitude + (bottomLatitude - topLatitude)/2;
-        region.center.longitude = leftLongitude + (rightLongitude - leftLongitude)/2;
-        region.span.latitudeDelta = bottomLatitude - topLatitude;
-        region.span.longitudeDelta = rightLongitude - leftLongitude;
-        [mapView setRegion:region animated:YES];
-    }    
+    }
+}
+
+
+- (void)_updateErrorView {
+    if ([errors count]) {
+        NSDictionary *error = [errors objectAtIndex:0];
+        errorMessage.textLabel.text = [error objectForKey:WAYReasonKey];
+        errorMessage.hidden = NO;
+    }
+    else {
+        errorMessage.hidden = YES;
+    }
+
 }
 
 @end

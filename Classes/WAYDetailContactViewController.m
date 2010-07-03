@@ -368,12 +368,14 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         // If user tries to delete currently edited row which has text field with no text, do nothing,
         // because this row was deleted after commiting changes.
         if (_currentIndexPath != nil) {
-            [contact removePhonesObject:[_contactMobilePhones objectAtIndex:[_currentIndexPath row]]];
+            Phone *phone = [_contactMobilePhones objectAtIndex:[_currentIndexPath row]];
+            [contact.managedObjectContext deleteObject:phone];
+            [contact removePhonesObject:phone];
         }
     }   
     else if (editingStyle == UITableViewCellEditingStyleInsert) {
         Phone *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
-        [contact addPhonesObject:newPhone];
+        newPhone.contact = contact;
         WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[tableView cellForRowAtIndexPath:_currentIndexPath];
         [cell.textField becomeFirstResponder];
     }
@@ -408,7 +410,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     Phone *newPhone = [NSEntityDescription insertNewObjectForEntityForName:@"Phone" inManagedObjectContext:contact.managedObjectContext];
-    [contact addPhonesObject:newPhone];
+    newPhone.contact = contact;
     [self.tableView endUpdates];
     WAYEditableTableViewCell *cell = (WAYEditableTableViewCell *)[tableView cellForRowAtIndexPath:_currentIndexPath];
     [cell.textField becomeFirstResponder];

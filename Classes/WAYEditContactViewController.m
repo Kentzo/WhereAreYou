@@ -41,7 +41,19 @@
         self.navigationItem.leftBarButtonItem.enabled = NO;
     }
     else {
-        [contact.managedObjectContext save:nil];
+        NSError *error = nil;
+        if (![contact.managedObjectContext save:&error]) {
+            NSLog(@"Failed to save to data store: %@", [error localizedDescription]);
+            NSArray* detailedErrors = [[error userInfo] objectForKey:NSDetailedErrorsKey];
+            if(detailedErrors != nil && [detailedErrors count] > 0) {
+                for(NSError* detailedError in detailedErrors) {
+                    NSLog(@"  DetailedError: %@", [detailedError userInfo]);
+                }
+            }
+            else {
+                NSLog(@"  %@", [error userInfo]);
+            }
+        }
         [self.navigationItem setHidesBackButton:NO animated:YES];
         self.navigationItem.leftBarButtonItem.enabled = YES;
         [delegate editContactViewControllerDidDone:self];
@@ -50,7 +62,7 @@
 
 
 - (void)_managedObjectContextDidChanged:(NSNotification *)notification {
-    self.navigationItem.rightBarButtonItem.enabled = [contact validateForUpdate:nil];
+    self.navigationItem.rightBarButtonItem.enabled = [contact validateForUpdate:nil] && [contact validatePhonesForUpdate:nil];
 }
 
 @end
