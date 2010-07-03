@@ -35,10 +35,14 @@
 		E23654A111DC760E0061891E /* CXMLNode.m in Sources */ = {isa = PBXBuildFile; fileRef = E236549311DC760E0061891E /* CXMLNode.m */; };
 		E23654A211DC760E0061891E /* CTidy.m in Sources */ = {isa = PBXBuildFile; fileRef = E236549611DC760E0061891E /* CTidy.m */; };
 		E250D85E11CF94CE0005FC2E /* AddressBookAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = E250D85D11CF94CE0005FC2E /* AddressBookAdditions.m */; };
+		E272A49111DF7A1400DF7E5A /* WAYErrorMessageControl.m in Sources */ = {isa = PBXBuildFile; fileRef = E272A49011DF7A1400DF7E5A /* WAYErrorMessageControl.m */; };
 		E280C5D811D0A884000BFCC6 /* WAYDetailContactViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E280C5D711D0A884000BFCC6 /* WAYDetailContactViewController.m */; };
 		E28336B511D4B1BC0047E6B0 /* WAYEditableTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = E28336B411D4B1BC0047E6B0 /* WAYEditableTableViewCell.m */; };
 		E2833E9F11D7E1FB0047E6B0 /* WAYAddNewContactViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2833E9E11D7E1FB0047E6B0 /* WAYAddNewContactViewController.m */; };
 		E2833FD011D88C980047E6B0 /* WAYEditContactViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2833FCF11D88C980047E6B0 /* WAYEditContactViewController.m */; };
+		E2934C4D11DF8B3400B5ED98 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2934C4C11DF8B3400B5ED98 /* QuartzCore.framework */; };
+		E2934CDE11DF9D1500B5ED98 /* exclamation.png in Resources */ = {isa = PBXBuildFile; fileRef = E2934CDD11DF9D1500B5ED98 /* exclamation.png */; };
+		E2934D2A11DFA11300B5ED98 /* WAYErrorListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2934D2911DFA11300B5ED98 /* WAYErrorListViewController.m */; };
 		E2B8599911DE1BF6003C56EB /* NSNumber+LongLongFromString.m in Sources */ = {isa = PBXBuildFile; fileRef = E2B8599811DE1BF6003C56EB /* NSNumber+LongLongFromString.m */; };
 		E2B859E511DE22E7003C56EB /* PhoneNumberFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = E2B859E411DE22E7003C56EB /* PhoneNumberFormatter.m */; };
 		E2B85A8211DE411A003C56EB /* twitter.png in Resources */ = {isa = PBXBuildFile; fileRef = E2B85A8111DE411A003C56EB /* twitter.png */; };
@@ -75,8 +79,8 @@
 		E20FAB5711DB3D750040136D /* OASAPIOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OASAPIOperation.m; sourceTree = "<group>"; };
 		E20FAB9711DB4FCC0040136D /* WAYDataSyncer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYDataSyncer.h; sourceTree = "<group>"; };
 		E20FAB9811DB4FCC0040136D /* WAYDataSyncer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYDataSyncer.m; sourceTree = "<group>"; };
-		E20FABC611DB5D780040136D /* Phone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Phone.h; sourceTree = SOURCE_ROOT; };
-		E20FABC711DB5D780040136D /* Phone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Phone.m; sourceTree = SOURCE_ROOT; };
+		E20FABC611DB5D780040136D /* Phone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Phone.h; sourceTree = "<group>"; };
+		E20FABC711DB5D780040136D /* Phone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Phone.m; sourceTree = "<group>"; };
 		E236548011DC760E0061891E /* CXMLDocument_CreationExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CXMLDocument_CreationExtensions.h; sourceTree = "<group>"; };
 		E236548111DC760E0061891E /* CXMLDocument_CreationExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CXMLDocument_CreationExtensions.m; sourceTree = "<group>"; };
 		E236548211DC760E0061891E /* CXMLNode_CreationExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CXMLNode_CreationExtensions.h; sourceTree = "<group>"; };
@@ -102,6 +106,8 @@
 		E236549711DC760E0061891E /* TouchXML.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TouchXML.h; sourceTree = "<group>"; };
 		E250D85C11CF94CE0005FC2E /* AddressBookAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AddressBookAdditions.h; sourceTree = "<group>"; };
 		E250D85D11CF94CE0005FC2E /* AddressBookAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AddressBookAdditions.m; sourceTree = "<group>"; };
+		E272A48F11DF7A1400DF7E5A /* WAYErrorMessageControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYErrorMessageControl.h; sourceTree = "<group>"; };
+		E272A49011DF7A1400DF7E5A /* WAYErrorMessageControl.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYErrorMessageControl.m; sourceTree = "<group>"; };
 		E280C5D611D0A884000BFCC6 /* WAYDetailContactViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYDetailContactViewController.h; sourceTree = "<group>"; };
 		E280C5D711D0A884000BFCC6 /* WAYDetailContactViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYDetailContactViewController.m; sourceTree = "<group>"; };
 		E28336B311D4B1BC0047E6B0 /* WAYEditableTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYEditableTableViewCell.h; sourceTree = "<group>"; };
@@ -110,6 +116,10 @@
 		E2833E9E11D7E1FB0047E6B0 /* WAYAddNewContactViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYAddNewContactViewController.m; sourceTree = "<group>"; };
 		E2833FCE11D88C980047E6B0 /* WAYEditContactViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYEditContactViewController.h; sourceTree = "<group>"; };
 		E2833FCF11D88C980047E6B0 /* WAYEditContactViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYEditContactViewController.m; sourceTree = "<group>"; };
+		E2934C4C11DF8B3400B5ED98 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		E2934CDD11DF9D1500B5ED98 /* exclamation.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = exclamation.png; sourceTree = "<group>"; };
+		E2934D2811DFA11300B5ED98 /* WAYErrorListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYErrorListViewController.h; sourceTree = "<group>"; };
+		E2934D2911DFA11300B5ED98 /* WAYErrorListViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WAYErrorListViewController.m; sourceTree = "<group>"; };
 		E2B8599711DE1BF6003C56EB /* NSNumber+LongLongFromString.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSNumber+LongLongFromString.h"; sourceTree = "<group>"; };
 		E2B8599811DE1BF6003C56EB /* NSNumber+LongLongFromString.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSNumber+LongLongFromString.m"; sourceTree = "<group>"; };
 		E2B859E311DE22E7003C56EB /* PhoneNumberFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhoneNumberFormatter.h; sourceTree = "<group>"; };
@@ -134,6 +144,7 @@
 				E2FA402411CD0570002606AC /* AddressBook.framework in Frameworks */,
 				E2FA402611CD0570002606AC /* AddressBookUI.framework in Frameworks */,
 				E2FA402F11CD065F002606AC /* MapKit.framework in Frameworks */,
+				E2934C4D11DF8B3400B5ED98 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,6 +154,10 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				E2934D2811DFA11300B5ED98 /* WAYErrorListViewController.h */,
+				E2934D2911DFA11300B5ED98 /* WAYErrorListViewController.m */,
+				E272A48F11DF7A1400DF7E5A /* WAYErrorMessageControl.h */,
+				E272A49011DF7A1400DF7E5A /* WAYErrorMessageControl.m */,
 				E20FADD311DC75700040136D /* TouchXML */,
 				E20FAA2811DA55530040136D /* OpenApiService */,
 				E2FA403F11CD0F7E002606AC /* Data */,
@@ -204,6 +219,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				E2934CDD11DF9D1500B5ED98 /* exclamation.png */,
 				E2B85A8111DE411A003C56EB /* twitter.png */,
 				2819300D112F7FA900ECF9B4 /* WhereAreYou.xcdatamodeld */,
 				28AD735F0D9D9599002E5188 /* MainWindow.xib */,
@@ -223,6 +239,7 @@
 				E2FA402311CD0570002606AC /* AddressBook.framework */,
 				E2FA402511CD0570002606AC /* AddressBookUI.framework */,
 				E2FA402E11CD065F002606AC /* MapKit.framework */,
+				E2934C4C11DF8B3400B5ED98 /* QuartzCore.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -350,6 +367,7 @@
 				28AD73600D9D9599002E5188 /* MainWindow.xib in Resources */,
 				2804203C108E9BAB000629CD /* DetailView.xib in Resources */,
 				E2B85A8211DE411A003C56EB /* twitter.png in Resources */,
+				E2934CDE11DF9D1500B5ED98 /* exclamation.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -389,6 +407,8 @@
 				E23654A211DC760E0061891E /* CTidy.m in Sources */,
 				E2B8599911DE1BF6003C56EB /* NSNumber+LongLongFromString.m in Sources */,
 				E2B859E511DE22E7003C56EB /* PhoneNumberFormatter.m in Sources */,
+				E272A49111DF7A1400DF7E5A /* WAYErrorMessageControl.m in Sources */,
+				E2934D2A11DFA11300B5ED98 /* WAYErrorListViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
