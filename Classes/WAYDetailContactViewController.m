@@ -481,7 +481,6 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         Phone *phone = [_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]];
         textField.text = [phone.phone stringValue];
     }
-    [self.tableView scrollToRowAtIndexPath:_editingRowIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
 }
 
 
