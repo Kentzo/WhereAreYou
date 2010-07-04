@@ -382,7 +382,6 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         if (_currentIndexPath != nil) {
             Phone *phone = [_contactMobilePhones objectAtIndex:[_currentIndexPath row]];
             [contact.managedObjectContext deleteObject:phone];
-            [contact removePhonesObject:phone];
         }
     }   
     else if (editingStyle == UITableViewCellEditingStyleInsert) {
@@ -482,6 +481,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
         Phone *phone = [_contactMobilePhones objectAtIndex:[_editingRowIndexPath row]];
         textField.text = [phone.phone stringValue];
     }
+    [self.tableView scrollToRowAtIndexPath:_editingRowIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
 }
 
 
