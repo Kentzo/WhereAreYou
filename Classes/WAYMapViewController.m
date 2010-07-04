@@ -1,12 +1,12 @@
 #import "WAYMapViewController.h"
-#import "RootViewController.h"
+#import "WAYRootViewController.h"
 #import "WAYErrorListViewController.h"
 #import "WAYErrorMessageControl.h"
 #import "WAYDataSyncer.h"
 #import "Phone.h"
 #import "Contact.h"
 
-
+// This constant is used when centerAnnotations method is called. You can increase this value to decrease zoom level
 static const float kSpanDelta = 1.15f;
 
 @interface WAYMapViewController (/* Private stuff here */)
@@ -226,15 +226,15 @@ static const float kSpanDelta = 1.15f;
         annotationView.canShowCallout = YES;
     }
     
-    if ([((Phone*)annotation).contact.twitter length]) {
-        UIImage *twitterImage = [UIImage imageNamed:@"twitter.png"];
-        UIButton *twitterButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        [twitterButton setImage:twitterImage forState:UIControlStateNormal];
-        CGRect frame = twitterButton.frame;
-        frame.size = CGSizeMake(18, 18);
-        twitterButton.frame = frame;
-        annotationView.rightCalloutAccessoryView = twitterButton;
-    }
+//    if ([((Phone*)annotation).contact.twitter length]) {
+//        UIImage *twitterImage = [UIImage imageNamed:@"twitter.png"];
+//        UIButton *twitterButton = [UIButton buttonWithType:UIButtonTypeCustom];
+//        [twitterButton setImage:twitterImage forState:UIControlStateNormal];
+//        CGRect frame = twitterButton.frame;
+//        frame.size = CGSizeMake(18, 18);
+//        twitterButton.frame = frame;
+//        annotationView.rightCalloutAccessoryView = twitterButton;
+//    }
     
     return annotationView;
 }

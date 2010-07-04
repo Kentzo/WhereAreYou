@@ -1,5 +1,5 @@
 #import "WAYDataSyncer.h"
-#import "OASGetLocationOperation.h"
+#import "OASAPIGetLocationOperation.h"
 #import "Contact.h"
 #import "Phone.h"
 
@@ -150,15 +150,15 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
         NSArray *results = [context executeFetchRequest:request error:nil];
         [request release];
         for (Phone *phone in results) {
-            OASGetLocationOperation *getLocation = [[OASGetLocationOperation alloc] initWithApplId:applId 
-                                                                                           applKey:applKey
-                                                                                         requestId:nil
-                                                                                       phoneNumber:phone.phone 
-                                                                                 requestedAccuracy:[NSNumber numberWithInt:defaultRequestedAccuracy] 
-                                                                                acceptableAccuracy:[NSNumber numberWithInt:defaultAcceptableAccuract]
-                                                                                        maximumAge:[NSNumber numberWithLongLong:defaultMaximumAge]
-                                                                                      responceTime:[NSNumber numberWithLongLong:defaultResponseTime]
-                                                                                         tolerance:OASDelayToleranceTolerant];
+            OASAPIGetLocationOperation *getLocation = [[OASAPIGetLocationOperation alloc] initWithApplId:applId 
+                                                                                                 applKey:applKey
+                                                                                               requestId:nil
+                                                                                             phoneNumber:phone.phone 
+                                                                                       requestedAccuracy:[NSNumber numberWithInt:defaultRequestedAccuracy] 
+                                                                                      acceptableAccuracy:[NSNumber numberWithInt:defaultAcceptableAccuract]
+                                                                                              maximumAge:[NSNumber numberWithLongLong:defaultMaximumAge]
+                                                                                            responceTime:[NSNumber numberWithLongLong:defaultResponseTime]
+                                                                                               tolerance:OASDelayToleranceTolerant];
             getLocation.delegate = self;
             [self _addOperation:getLocation];
             [getLocation release];
@@ -180,15 +180,15 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
         NSArray *results = [context executeFetchRequest:request error:nil];
         [request release];
         for (Phone *phone in results) {
-            OASGetLocationOperation *getLocation = [[OASGetLocationOperation alloc] initWithApplId:applId 
-                                                                                           applKey:applKey
-                                                                                         requestId:nil
-                                                                                       phoneNumber:phone.phone
-                                                                                 requestedAccuracy:[NSNumber numberWithInt:defaultRequestedAccuracy]
-                                                                                acceptableAccuracy:[NSNumber numberWithInt:defaultAcceptableAccuract]
-                                                                                        maximumAge:[NSNumber numberWithLongLong:defaultMaximumAge]
-                                                                                      responceTime:[NSNumber numberWithLongLong:defaultResponseTime]
-                                                                                         tolerance:OASDelayToleranceTolerant];
+            OASAPIGetLocationOperation *getLocation = [[OASAPIGetLocationOperation alloc] initWithApplId:applId 
+                                                                                                 applKey:applKey
+                                                                                               requestId:nil
+                                                                                             phoneNumber:phone.phone
+                                                                                       requestedAccuracy:[NSNumber numberWithInt:defaultRequestedAccuracy]
+                                                                                      acceptableAccuracy:[NSNumber numberWithInt:defaultAcceptableAccuract]
+                                                                                              maximumAge:[NSNumber numberWithLongLong:defaultMaximumAge]
+                                                                                            responceTime:[NSNumber numberWithLongLong:defaultResponseTime]
+                                                                                               tolerance:OASDelayToleranceTolerant];
             getLocation.delegate = self;
             [self _addOperation:getLocation];
             [getLocation release];
@@ -203,15 +203,15 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
     NSAssert (context != nil, @"You've forgotten to set context");
     @synchronized (context) {
         Phone *phone = (Phone *)[context existingObjectWithID:phoneId error:nil];
-        OASGetLocationOperation *getLocation = [[OASGetLocationOperation alloc] initWithApplId:applId
-                                                                                       applKey:applKey
-                                                                                     requestId:nil
-                                                                                   phoneNumber:phone.phone
-                                                                             requestedAccuracy:[NSNumber numberWithInt:defaultRequestedAccuracy]
-                                                                            acceptableAccuracy:[NSNumber numberWithInt:defaultAcceptableAccuract]
-                                                                                    maximumAge:[NSNumber numberWithLongLong:defaultMaximumAge]
-                                                                                  responceTime:[NSNumber numberWithLongLong:defaultResponseTime]
-                                                                                     tolerance:OASDelayToleranceTolerant];
+        OASAPIGetLocationOperation *getLocation = [[OASAPIGetLocationOperation alloc] initWithApplId:applId
+                                                                                             applKey:applKey
+                                                                                           requestId:nil
+                                                                                         phoneNumber:phone.phone
+                                                                                   requestedAccuracy:[NSNumber numberWithInt:defaultRequestedAccuracy]
+                                                                                  acceptableAccuracy:[NSNumber numberWithInt:defaultAcceptableAccuract]
+                                                                                          maximumAge:[NSNumber numberWithLongLong:defaultMaximumAge]
+                                                                                        responceTime:[NSNumber numberWithLongLong:defaultResponseTime]
+                                                                                           tolerance:OASDelayToleranceTolerant];
         getLocation.delegate = self;
         [self _addOperation:getLocation];
         [getLocation release];
@@ -240,6 +240,7 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
 
 
 - (void)_addOperation:(OASAPIOperation *)operation {
+    // Check that _queue dosen't already contain this operation
     if (![[_queue operations] containsObject:operation]) {
         [_queue addOperation:operation];
     }
@@ -251,7 +252,7 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
 
 - (void)apiOperation:(OASAPIOperation *)operation didEndWithResponse:(NSHTTPURLResponse *)response body:(NSData *)aBody error:(NSError *)anError {
     
-    if ([operation isKindOfClass:[OASGetLocationOperation class]]) {
+    if ([operation isKindOfClass:[OASAPIGetLocationOperation class]]) {
         /*      
          Example of Success Response
          <ns:getLocationResponse xmlns:ns="http://service.las.alu.com/xsd"> 
@@ -341,7 +342,7 @@ static NSDictionary* CXMLNodeToNSDictionary(CXMLNode *rootElement) {
 }
 
 
-- (void)apiOperationDidCancel:(OASGetLocationOperation *)operation {
+- (void)apiOperationDidCancel:(OASAPIGetLocationOperation *)operation {
     NSLog(@"apiOperationDidCancel:");
 }
 

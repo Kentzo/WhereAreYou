@@ -1,5 +1,5 @@
 #import "WhereAreYouAppDelegate.h"
-#import "RootViewController.h"
+#import "WAYRootViewController.h"
 #import "WAYMapViewController.h"
 #import "WAYDataSyncer.h"
 

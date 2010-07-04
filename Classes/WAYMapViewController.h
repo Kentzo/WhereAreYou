@@ -1,6 +1,6 @@
 
 
-@class RootViewController, Phone, Contact, WAYErrorMessageControl;
+@class WAYRootViewController, Phone, Contact, WAYErrorMessageControl;
 
 @interface WAYMapViewController : UIViewController <UIPopoverControllerDelegate, UISplitViewControllerDelegate, MKMapViewDelegate> {
     
@@ -11,7 +11,7 @@
     WAYErrorMessageControl *errorMessage;
     UIBarButtonItem *errorMessageBarButtonItem;
     UIBarButtonItem *updateContactItem;
-    RootViewController *rootViewController;
+    WAYRootViewController *rootViewController;
     
     NSManagedObjectContext *managedObjectContext;
     Contact *contact;
@@ -25,7 +25,7 @@
 @property (nonatomic, retain) IBOutlet WAYErrorMessageControl *errorMessage;
 @property (nonatomic, retain) IBOutlet UIBarButtonItem *errorMessageBarButtonItem;
 @property (nonatomic, retain) IBOutlet UIBarButtonItem *updateContactItem;
-@property (nonatomic, assign) IBOutlet RootViewController *rootViewController;
+@property (nonatomic, assign) IBOutlet WAYRootViewController *rootViewController;
 @property (nonatomic, retain) NSManagedObjectContext *managedObjectContext;
 @property (nonatomic, retain) Contact *contact;
 @property (nonatomic, readonly) NSArray *errors;

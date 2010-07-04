@@ -2,6 +2,7 @@
 
 
 @interface WAYErrorMessageControl (/* Private stuff here */)
+@property (nonatomic, readwrite, retain) IBOutlet UILabel *textLabel;
 @property (nonatomic, readwrite, retain) IBOutlet UIImageView *imageView;
 
 - (void)_highlight:(BOOL)highlight;

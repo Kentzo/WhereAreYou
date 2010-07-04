@@ -23,6 +23,7 @@
 
 
 - (BOOL)isEqualToTask:(OASAPIOperation *)task {
+    // Compare urls
     return [url isEqual:task.url];
 }
 
@@ -33,6 +34,7 @@
 
 
 - (NSUInteger)hash {
+    // Return URL hash
     return [url hash];
 }
 
@@ -52,14 +54,14 @@
     
 	OASConnectionDelegate *connectionDelegate = [OASConnectionDelegate delegate];
     
-    // Set up custom rul loop to provide asynchronous
+    // Set up custom rul loop to be asynchronous
     static NSString *runLoopMode = @"com.kulakov.openapiservice.operation";
     NSURLConnection *connection = [[[NSURLConnection alloc] initWithRequest:request delegate:connectionDelegate startImmediately:NO] autorelease];
     [request release];
 	[connection scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:runLoopMode];
 	[connection start];
     NSLog(@"=> %@", url);
-	while (!connectionDelegate.done && ![self isCancelled]) {
+	while (!connectionDelegate.done && ![self isCancelled]) { // Check every 0.3 seconds that operation isn't cancelled
 		[[NSRunLoop currentRunLoop] runMode:runLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:.3f]];
 	}
     if ([self isCancelled]) {

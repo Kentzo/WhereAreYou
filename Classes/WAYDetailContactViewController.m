@@ -33,7 +33,7 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
 /*!
  * @property _editingRowIndexPath
  * @abstract Keeps index path of currently edited row.
- * @discussion Has value only when some row is edited. Otherwise nil.
+ * @discussion Has value only when there is a row that is being edited. Otherwise nil.
  */
 @property (nonatomic, retain) NSIndexPath *_editingRowIndexPath;
 
@@ -46,7 +46,12 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
  */
 @property (nonatomic, assign) UITextField *_editingTextField;
 
+/*!
+ * @property _nonDecimalDigits
+ * @abstract NSCharacterSet that represents all characters except of decimal digits.
+ */
 @property (nonatomic, retain) NSCharacterSet *_nonDecimalDigits;
+
 /*!
  * @method _stopEditingTextField
  * @abstract Stops editing cell at index path _editingRowIndexPath.
@@ -54,6 +59,10 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
  */
 - (void)_stopEditingTextField;
 
+/*!
+ * @method _textFieldValueChanged:
+ * @abstract Is called when value of any textfield is changed
+ */
 - (void)_textFieldValueChanged:(UITextField *)sender;
 
 @end

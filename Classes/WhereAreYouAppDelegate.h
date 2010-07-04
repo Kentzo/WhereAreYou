@@ -10,7 +10,7 @@
 #import <CoreData/CoreData.h>
 
 
-@class RootViewController;
+@class WAYRootViewController;
 @class WAYMapViewController;
 
 @interface WhereAreYouAppDelegate : NSObject <UIApplicationDelegate> {
@@ -23,14 +23,14 @@
 
 	UISplitViewController *splitViewController;
 
-	RootViewController *rootViewController;
+	WAYRootViewController *rootViewController;
 	WAYMapViewController *detailViewController;
 }
 
 @property (nonatomic, retain) IBOutlet UIWindow *window;
 
 @property (nonatomic, retain) IBOutlet UISplitViewController *splitViewController;
-@property (nonatomic, retain) IBOutlet RootViewController *rootViewController;
+@property (nonatomic, retain) IBOutlet WAYRootViewController *rootViewController;
 @property (nonatomic, retain) IBOutlet WAYMapViewController *detailViewController;
 
 @end

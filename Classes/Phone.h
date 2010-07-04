@@ -2,7 +2,7 @@
 
 @class Contact;
 
-@interface Phone :  NSManagedObject <MKAnnotation>
+@interface Phone : NSManagedObject <MKAnnotation>
 {
     CLLocationCoordinate2D coordinate;
 }

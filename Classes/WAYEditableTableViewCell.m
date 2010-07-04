@@ -22,22 +22,23 @@
     
     if (self = [super initWithFrame:frame]) {
         
-        static const CGFloat elementMargin = 8.0f;
+//        static const CGFloat elementMargin = 8.0f;
         
         self.opaque = YES;
         
-        UIActivityIndicatorView *indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-        CGRect newIndicatorFrame = indicator.frame;
-        newIndicatorFrame.origin.x = CGRectGetWidth(frame) - CGRectGetWidth(indicator.frame);
-        newIndicatorFrame.origin.y = (CGRectGetHeight(frame) - CGRectGetHeight(indicator.frame))/2;
-        indicator.frame = newIndicatorFrame;
-        indicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
-        indicator.opaque = YES;
-        self.activityIndicator = indicator;
-        [self addSubview:indicator];    
-        [indicator release];
+//        UIActivityIndicatorView *indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+//        CGRect newIndicatorFrame = indicator.frame;
+//        newIndicatorFrame.origin.x = CGRectGetWidth(frame) - CGRectGetWidth(indicator.frame);
+//        newIndicatorFrame.origin.y = (CGRectGetHeight(frame) - CGRectGetHeight(indicator.frame))/2;
+//        indicator.frame = newIndicatorFrame;
+//        indicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
+//        indicator.opaque = YES;
+//        self.activityIndicator = indicator;
+//        [self addSubview:indicator];    
+//        [indicator release];
         
-        UITextField *field = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, CGRectGetMinX(indicator.frame) - elementMargin, CGRectGetHeight(frame))];
+        //UITextField *field = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, CGRectGetMinX(indicator.frame) - elementMargin, CGRectGetHeight(frame))];
+        UITextField *field = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(frame), CGRectGetHeight(frame))];
         field.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         field.clearButtonMode = UITextFieldViewModeWhileEditing;
         field.opaque = YES;
@@ -55,14 +56,14 @@
     
     [super setBackgroundColor:newColor];
     textField.backgroundColor = newColor;
-    activityIndicator.backgroundColor = newColor;
+//    activityIndicator.backgroundColor = newColor;
 }
 
 
 - (void)setHighlighted:(BOOL)isHighlighted {
     highlighted = isHighlighted;
     textField.textColor = isHighlighted ? [UIColor whiteColor] : [UIColor blackColor];
-    activityIndicator.activityIndicatorViewStyle = isHighlighted ? UIActivityIndicatorViewStyleWhite : UIActivityIndicatorViewStyleGray;
+//    activityIndicator.activityIndicatorViewStyle = isHighlighted ? UIActivityIndicatorViewStyleWhite : UIActivityIndicatorViewStyleGray;
 }
 
 @end
