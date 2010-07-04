@@ -140,6 +140,9 @@ static NSString * const WAYDetailContactIsCheckingKey = @"WAYDetailContactIsChec
     contact = newContact;
     [_contactMobilePhones release];
     _contactMobilePhones = [[contact.phones allObjects] mutableCopy];
+    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"phone" ascending:YES];
+    [_contactMobilePhones sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor]];
+    [sortDescriptor release];
     self.title = contact.name;
 }
 
