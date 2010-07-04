@@ -34,6 +34,7 @@
 		E23654A011DC760E0061891E /* CXMLNode_XPathExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = E236549111DC760E0061891E /* CXMLNode_XPathExtensions.m */; };
 		E23654A111DC760E0061891E /* CXMLNode.m in Sources */ = {isa = PBXBuildFile; fileRef = E236549311DC760E0061891E /* CXMLNode.m */; };
 		E23654A211DC760E0061891E /* CTidy.m in Sources */ = {isa = PBXBuildFile; fileRef = E236549611DC760E0061891E /* CTidy.m */; };
+		E24987B111E0D86700D949A2 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = E24987B011E0D86700D949A2 /* Icon.png */; };
 		E250D85E11CF94CE0005FC2E /* AddressBookAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = E250D85D11CF94CE0005FC2E /* AddressBookAdditions.m */; };
 		E272A49111DF7A1400DF7E5A /* WAYErrorMessageControl.m in Sources */ = {isa = PBXBuildFile; fileRef = E272A49011DF7A1400DF7E5A /* WAYErrorMessageControl.m */; };
 		E280C5D811D0A884000BFCC6 /* WAYDetailContactViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E280C5D711D0A884000BFCC6 /* WAYDetailContactViewController.m */; };
@@ -105,6 +106,7 @@
 		E236549511DC760E0061891E /* CTidy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CTidy.h; sourceTree = "<group>"; };
 		E236549611DC760E0061891E /* CTidy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CTidy.m; sourceTree = "<group>"; };
 		E236549711DC760E0061891E /* TouchXML.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TouchXML.h; sourceTree = "<group>"; };
+		E24987B011E0D86700D949A2 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		E250D85C11CF94CE0005FC2E /* AddressBookAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AddressBookAdditions.h; sourceTree = "<group>"; };
 		E250D85D11CF94CE0005FC2E /* AddressBookAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AddressBookAdditions.m; sourceTree = "<group>"; };
 		E272A48F11DF7A1400DF7E5A /* WAYErrorMessageControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WAYErrorMessageControl.h; sourceTree = "<group>"; };
@@ -206,6 +208,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				E24987B011E0D86700D949A2 /* Icon.png */,
 				E2934CDD11DF9D1500B5ED98 /* exclamation.png */,
 				E2B85A8111DE411A003C56EB /* twitter.png */,
 				2819300D112F7FA900ECF9B4 /* WhereAreYou.xcdatamodeld */,
@@ -388,6 +391,7 @@
 				2804203C108E9BAB000629CD /* DetailView.xib in Resources */,
 				E2B85A8211DE411A003C56EB /* twitter.png in Resources */,
 				E2934CDE11DF9D1500B5ED98 /* exclamation.png in Resources */,
+				E24987B111E0D86700D949A2 /* Icon.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
