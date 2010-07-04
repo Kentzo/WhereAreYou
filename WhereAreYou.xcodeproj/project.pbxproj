@@ -46,6 +46,7 @@
 		E2B8599911DE1BF6003C56EB /* NSNumber+LongLongFromString.m in Sources */ = {isa = PBXBuildFile; fileRef = E2B8599811DE1BF6003C56EB /* NSNumber+LongLongFromString.m */; };
 		E2B859E511DE22E7003C56EB /* PhoneNumberFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = E2B859E411DE22E7003C56EB /* PhoneNumberFormatter.m */; };
 		E2B85A8211DE411A003C56EB /* twitter.png in Resources */ = {isa = PBXBuildFile; fileRef = E2B85A8111DE411A003C56EB /* twitter.png */; };
+		E2D830BA11E084B20080D9D8 /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E2D830B911E084B20080D9D8 /* libxml2.dylib */; };
 		E2FA402411CD0570002606AC /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2FA402311CD0570002606AC /* AddressBook.framework */; };
 		E2FA402611CD0570002606AC /* AddressBookUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2FA402511CD0570002606AC /* AddressBookUI.framework */; };
 		E2FA402F11CD065F002606AC /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2FA402E11CD065F002606AC /* MapKit.framework */; };
@@ -125,6 +126,7 @@
 		E2B859E311DE22E7003C56EB /* PhoneNumberFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhoneNumberFormatter.h; sourceTree = "<group>"; };
 		E2B859E411DE22E7003C56EB /* PhoneNumberFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PhoneNumberFormatter.m; sourceTree = "<group>"; };
 		E2B85A8111DE411A003C56EB /* twitter.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = twitter.png; sourceTree = "<group>"; };
+		E2D830B911E084B20080D9D8 /* libxml2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libxml2.dylib; path = usr/lib/libxml2.dylib; sourceTree = SDKROOT; };
 		E2FA402311CD0570002606AC /* AddressBook.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AddressBook.framework; path = System/Library/Frameworks/AddressBook.framework; sourceTree = SDKROOT; };
 		E2FA402511CD0570002606AC /* AddressBookUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AddressBookUI.framework; path = System/Library/Frameworks/AddressBookUI.framework; sourceTree = SDKROOT; };
 		E2FA402E11CD065F002606AC /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
@@ -145,6 +147,7 @@
 				E2FA402611CD0570002606AC /* AddressBookUI.framework in Frameworks */,
 				E2FA402F11CD065F002606AC /* MapKit.framework in Frameworks */,
 				E2934C4D11DF8B3400B5ED98 /* QuartzCore.framework in Frameworks */,
+				E2D830BA11E084B20080D9D8 /* libxml2.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,6 +243,7 @@
 				E2FA402511CD0570002606AC /* AddressBookUI.framework */,
 				E2FA402E11CD065F002606AC /* MapKit.framework */,
 				E2934C4C11DF8B3400B5ED98 /* QuartzCore.framework */,
+				E2D830B911E084B20080D9D8 /* libxml2.dylib */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
